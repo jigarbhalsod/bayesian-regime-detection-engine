@@ -1,0 +1,114 @@
+Phase 1
+│
+├── 1. Indian Equity Market
+│      → Learn how the Indian stock market works.
+│
+├── 2. Mutual Funds
+│      → Learn who will use our product and how they invest.
+│
+├── 3. Market Regimes
+│      → Learn the different "moods" of the market.
+│
+├── 4. Financial Indicators
+│      → Learn which market signals tell us the market's mood.
+│
+└── 5. Audit & Regulation
+       → Learn why the model must be explainable and trustworthy.
+
+
+| Regime              | One-word meaning | Simple explanation                                               |
+| ------------------- | ---------------- | ---------------------------------------------------------------- |
+| **Risk-On**         | **Confident**    | Investors are optimistic and willing to buy risky assets.        |
+| **Risk-Off**        | **Fearful**      | Investors are scared and prefer safer assets or cash.            |
+| **High Volatility** | **Chaotic**      | Prices move up and down very quickly.                            |
+| **Low Volatility**  | **Calm**         | Prices move slowly with small fluctuations.                      |
+| **Trending**        | **Directional**  | The market is consistently moving in one direction (up or down). |
+| **Sideways**        | **Stagnant**     | The market isn't moving much; it stays within a range.           |
+
+
+# Major phases:
+
+1. Business & BFSI Understanding
+2. Research & Literature
+3. Solution Architecture
+4. Data Layer
+5. Data Engineering
+6. Feature Engineering
+7. Financial Analysis
+8. Baseline Regime Engine
+9. Advanced Models
+10. Ensemble & Uncertainty
+11. Validation
+12. Decision Support Layer
+13. Deployment
+14. Documentation
+15. Finalization
+
+
+PHASE 1, BUSINESS & BFSI UNDERSTANDING
+
+1.1 Problem Understanding
+    ↓
+1.2 Product Objective
+    ↓
+1.3 BFSI Domain Understanding
+    ↓
+1.4 Market Regimes
+    ↓
+1.5 Users & Stakeholders
+    ↓
+1.6 Decision Workflow
+    ↓
+1.7 Use Cases
+    ↓
+1.8 Regulation & Governance
+    ↓
+1.9 Success Metrics
+    ↓
+1.10 Scope & Boundaries
+    ↓
+PHASE 1 COMPLETE
+
+PROJECT 1A MASTER LEARNING FLOW
+
+PHASE 1, BUSINESS & BFSI UNDERSTANDING
+Problem → Product → BFSI → Regimes → Users → Decision Workflow
+→ Use Cases → Regulation → Success Metrics → Scope
+
+                    ↓
+
+PHASE 2, RESEARCH & LITERATURE
+Research Strategy → Regime Detection → HMM/Bayesian HMM
+→ RS-VAR → Bayesian Neural Networks → Time-Series Foundation Models
+→ Sequential Inference → Changepoint Detection
+→ Ensemble Methods → Uncertainty & Calibration
+→ Financial Features → Method Comparison
+→ Research Conclusions
+
+Phase 2 flow
+2.1 Research Strategy
+Define exactly what we need to learn and how we'll evaluate research.
+2.2 Market Regime Detection Research
+Understand how financial regimes are defined and detected.
+2.3 HMM / Bayesian HMM
+Study the core regime-switching approach.
+2.4 Regime-Switching VAR
+Understand multivariate regime dynamics.
+2.5 Bayesian Neural Networks
+Study nonlinear modelling and uncertainty.
+2.6 Time-Series Foundation Models
+Evaluate models such as Chronos/TimesFM and whether they actually add value here.
+2.7 Sequential Inference
+Study particle filtering and online state estimation.
+2.8 Changepoint Detection
+Study BOCPD and its role in detecting regime transitions.
+2.9 Ensemble Methods
+Study Bayesian Model Averaging and time-aware stacking.
+2.10 Uncertainty & Calibration
+Study epistemic/aleatoric uncertainty and conformal prediction.
+2.11 Financial Features & Economic Rationale
+Determine which market, flow and macro variables make economic sense.
+2.12 Method Comparison Matrix
+Compare all candidate approaches on accuracy, uncertainty, interpretability, complexity, data requirements and suitability.
+2.13 Research Conclusions
+Decide what we will use, test, reject, or keep open.
