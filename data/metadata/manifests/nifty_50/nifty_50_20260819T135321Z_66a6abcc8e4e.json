@@ -1,0 +1,30 @@
+{
+  "dataset_id": "nifty_50",
+  "dataset_name": "NIFTY 50",
+  "domain": "market",
+  "classification": "core",
+  "frequency": "daily",
+  "source_id": "yahoo_finance",
+  "source": "Yahoo Finance",
+  "source_class": "fallback",
+  "source_reference": "https://query1.finance.yahoo.com/v8/finance/chart/^NSEI?period1=1262304000&period2=1787184000&interval=1d&events=history&start_date=2010-01-01&end_date=2026-08-19",
+  "fallback_used": true,
+  "fallback_reason": "nse: HTTP Error 503: Service Unavailable",
+  "requested_start_date": "2010-01-01",
+  "requested_end_date": "2026-08-19",
+  "actual_first_observation": null,
+  "actual_last_observation": null,
+  "ingestion_timestamp": "2026-08-19T13:53:21.852377+00:00",
+  "source_timestamp": null,
+  "availability_status": "READY",
+  "record_count": null,
+  "schema_version": "raw.v1",
+  "dataset_version": "v0.1.0",
+  "file_hash": "66a6abcc8e4e719b4c04dffae7dbcf0c43f673a331dd21daa648436587aaa86b",
+  "raw_path": "D:\\PROJECT\\Kotak Projects\\bayesian-regime-detection-engine\\data\\raw\\market\\nifty_50\\daily\\year=2026\\nifty_50_20260819T135321Z_66a6abcc8e4e.json",
+  "provider_metadata": {
+    "yahoo_symbol": "^NSEI",
+    "research_only": true,
+    "endpoint_type": "chart_api"
+  }
+}

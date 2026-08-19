@@ -1,0 +1,30 @@
+{
+  "dataset_id": "india_vix",
+  "dataset_name": "India VIX",
+  "domain": "market",
+  "classification": "core",
+  "frequency": "daily",
+  "source_id": "yahoo_finance",
+  "source": "Yahoo Finance",
+  "source_class": "fallback",
+  "source_reference": "https://query1.finance.yahoo.com/v8/finance/chart/^INDIAVIX?period1=1262304000&period2=1787184000&interval=1d&events=history&start_date=2010-01-01&end_date=2026-08-19",
+  "fallback_used": true,
+  "fallback_reason": "nse: HTTP Error 503: Service Unavailable",
+  "requested_start_date": "2010-01-01",
+  "requested_end_date": "2026-08-19",
+  "actual_first_observation": null,
+  "actual_last_observation": null,
+  "ingestion_timestamp": "2026-08-19T13:54:40.602287+00:00",
+  "source_timestamp": null,
+  "availability_status": "READY",
+  "record_count": null,
+  "schema_version": "raw.v1",
+  "dataset_version": "v0.1.0",
+  "file_hash": "19a01825827a810a236aefae2ab212b5b78f46fbc39bf07d20f3a4da4d7248ff",
+  "raw_path": "D:\\PROJECT\\Kotak Projects\\bayesian-regime-detection-engine\\data\\raw\\market\\india_vix\\daily\\year=2026\\india_vix_20260819T135440Z_19a01825827a.json",
+  "provider_metadata": {
+    "yahoo_symbol": "^INDIAVIX",
+    "research_only": true,
+    "endpoint_type": "chart_api"
+  }
+}
