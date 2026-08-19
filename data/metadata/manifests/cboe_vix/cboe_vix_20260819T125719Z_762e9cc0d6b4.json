@@ -1,0 +1,28 @@
+{
+  "dataset_id": "cboe_vix",
+  "dataset_name": "CBOE VIX",
+  "domain": "external",
+  "classification": "supporting",
+  "frequency": "daily",
+  "source_id": "fred",
+  "source": "Federal Reserve Economic Data",
+  "source_class": "structured",
+  "source_reference": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&start_date=2010-01-01",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "requested_start_date": "2010-01-01",
+  "requested_end_date": "latest_available",
+  "actual_first_observation": "1990-01-02",
+  "actual_last_observation": "2026-08-17",
+  "ingestion_timestamp": "2026-08-19T12:57:19.626456+00:00",
+  "source_timestamp": null,
+  "availability_status": "READY",
+  "record_count": 9555,
+  "schema_version": "raw.v1",
+  "dataset_version": "v0.1.0",
+  "file_hash": "762e9cc0d6b47a36283af3417040fbedbfead88ea5fd003c1a8cc5f70f83bf36",
+  "raw_path": "D:\\PROJECT\\Kotak Projects\\bayesian-regime-detection-engine\\data\\raw\\external\\cboe_vix\\daily\\year=2026\\cboe_vix_20260819T125719Z_762e9cc0d6b4.csv",
+  "provider_metadata": {
+    "fred_series_id": "VIXCLS"
+  }
+}

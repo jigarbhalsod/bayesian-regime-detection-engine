@@ -1,0 +1,28 @@
+{
+  "dataset_id": "sp500",
+  "dataset_name": "S&P 500",
+  "domain": "external",
+  "classification": "supporting",
+  "frequency": "daily",
+  "source_id": "stooq",
+  "source": "Stooq",
+  "source_class": "fallback",
+  "source_reference": "https://stooq.com/q/d/l/?s=%5Espx&i=d&d1=20100101&start_date=2010-01-01",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "requested_start_date": "2010-01-01",
+  "requested_end_date": "latest_available",
+  "actual_first_observation": null,
+  "actual_last_observation": null,
+  "ingestion_timestamp": "2026-08-19T12:57:16.114337+00:00",
+  "source_timestamp": null,
+  "availability_status": "READY",
+  "record_count": null,
+  "schema_version": "raw.v1",
+  "dataset_version": "v0.1.0",
+  "file_hash": "499207e8f63e15afa27a15da93ab26215890b109960bd043f965ecb77386cae3",
+  "raw_path": "D:\\PROJECT\\Kotak Projects\\bayesian-regime-detection-engine\\data\\raw\\external\\sp500\\daily\\year=2026\\sp500_20260819T125716Z_499207e8f63e.csv",
+  "provider_metadata": {
+    "stooq_symbol": "^spx"
+  }
+}

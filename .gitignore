@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project 1A data outputs
+data/raw/**
+data/interim/**
+data/processed/**
+data/curated/**
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/curated/.gitkeep
+!data/metadata/
+!data/metadata/**
+!data/metadata/manifests/
+!data/metadata/manifests/.gitkeep

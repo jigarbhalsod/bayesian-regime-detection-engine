@@ -1,0 +1,186 @@
+{
+  "datasets": [
+    {
+      "dataset_id": "nifty_50",
+      "name": "NIFTY 50",
+      "domain": "market",
+      "classification": "core",
+      "mvp_decision": "include",
+      "frequency": "daily",
+      "key_variables": ["open", "high", "low", "close", "returns"],
+      "purpose": "Captures trend and Indian equity market movement.",
+      "preferred_source_id": "nse",
+      "fallback_source_ids": ["yahoo_finance"]
+    },
+    {
+      "dataset_id": "india_vix",
+      "name": "India VIX",
+      "domain": "market",
+      "classification": "core",
+      "mvp_decision": "include",
+      "frequency": "daily",
+      "key_variables": ["level", "change", "returns"],
+      "purpose": "Captures expected domestic market volatility.",
+      "preferred_source_id": "nse",
+      "fallback_source_ids": ["yahoo_finance"]
+    },
+    {
+      "dataset_id": "nifty_breadth",
+      "name": "NIFTY breadth",
+      "domain": "market",
+      "classification": "supporting",
+      "mvp_decision": "include_if_accessible",
+      "frequency": "daily",
+      "key_variables": ["advances", "declines", "breadth_proxies"],
+      "purpose": "Measures participation behind Indian equity market moves.",
+      "preferred_source_id": "nse",
+      "fallback_source_ids": ["local_file"]
+    },
+    {
+      "dataset_id": "repo_rate",
+      "name": "Policy repo rate",
+      "domain": "macro",
+      "classification": "supporting",
+      "mvp_decision": "include",
+      "frequency": "event_based",
+      "key_variables": ["rate", "change_date"],
+      "purpose": "Represents monetary policy regime changes.",
+      "preferred_source_id": "rbi",
+      "fallback_source_ids": ["local_file"]
+    },
+    {
+      "dataset_id": "cpi_india",
+      "name": "India CPI",
+      "domain": "macro",
+      "classification": "supporting",
+      "mvp_decision": "include",
+      "frequency": "monthly",
+      "key_variables": ["index", "inflation_rate"],
+      "purpose": "Captures inflation pressure and macroeconomic regime context.",
+      "preferred_source_id": "mospi",
+      "fallback_source_ids": ["fred", "local_file"]
+    },
+    {
+      "dataset_id": "usd_inr",
+      "name": "USD/INR",
+      "domain": "external",
+      "classification": "supporting",
+      "mvp_decision": "include",
+      "frequency": "daily",
+      "key_variables": ["rate", "returns"],
+      "purpose": "Captures currency stress and external pressure.",
+      "preferred_source_id": "rbi",
+      "fallback_source_ids": ["local_file"]
+    },
+    {
+      "dataset_id": "sp500",
+      "name": "S&P 500",
+      "domain": "external",
+      "classification": "supporting",
+      "mvp_decision": "include",
+      "frequency": "daily",
+      "key_variables": ["close", "returns"],
+      "purpose": "Represents global equity risk sentiment.",
+      "preferred_source_id": "stooq",
+      "fallback_source_ids": ["yahoo_finance"]
+    },
+    {
+      "dataset_id": "cboe_vix",
+      "name": "CBOE VIX",
+      "domain": "external",
+      "classification": "supporting",
+      "mvp_decision": "include",
+      "frequency": "daily",
+      "key_variables": ["level", "change"],
+      "purpose": "Represents global risk aversion.",
+      "preferred_source_id": "fred",
+      "fallback_source_ids": ["yahoo_finance"]
+    },
+    {
+      "dataset_id": "crude_oil",
+      "name": "Crude oil",
+      "domain": "external",
+      "classification": "supporting",
+      "mvp_decision": "include",
+      "frequency": "daily",
+      "key_variables": ["price", "returns"],
+      "purpose": "Captures energy and macro shock pressure.",
+      "preferred_source_id": "stooq",
+      "fallback_source_ids": ["yahoo_finance"]
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "nse",
+      "name": "National Stock Exchange of India",
+      "source_class": "official",
+      "access_method": "official_download_or_api_with_provider_fallback",
+      "connector_type": "nse_official",
+      "base_url": "https://www.nseindia.com",
+      "notes": "Use official downloads where practical. NSE endpoints may require session-aware access."
+    },
+    {
+      "source_id": "rbi",
+      "name": "Reserve Bank of India",
+      "source_class": "official",
+      "access_method": "official_publications_or_downloads",
+      "connector_type": "rbi_official",
+      "base_url": "https://www.rbi.org.in",
+      "notes": "Publication dates must be preserved for point-in-time use."
+    },
+    {
+      "source_id": "mospi",
+      "name": "Ministry of Statistics and Programme Implementation",
+      "source_class": "official",
+      "access_method": "official_publication_or_reproducible_dataset",
+      "connector_type": "mospi_official",
+      "base_url": "https://www.mospi.gov.in",
+      "notes": "Release availability must be captured before macro values reach model inputs."
+    },
+    {
+      "source_id": "cboe",
+      "name": "Cboe",
+      "source_class": "official",
+      "access_method": "official_or_reliable_programmatic_source",
+      "connector_type": "http_csv",
+      "base_url": "https://www.cboe.com",
+      "notes": "Used for global volatility context."
+    },
+    {
+      "source_id": "fred",
+      "name": "Federal Reserve Economic Data",
+      "source_class": "structured",
+      "access_method": "public_csv_or_api",
+      "connector_type": "fred_csv",
+      "base_url": "https://fred.stlouisfed.org",
+      "notes": "Strong structured source for suitable macro and global series with clear provenance."
+    },
+    {
+      "source_id": "stooq",
+      "name": "Stooq",
+      "source_class": "fallback",
+      "access_method": "public_csv_download",
+      "connector_type": "stooq_csv",
+      "base_url": "https://stooq.com",
+      "notes": "Research/MVP fallback for external market series."
+    },
+    {
+      "source_id": "yahoo_finance",
+      "name": "Yahoo Finance",
+      "source_class": "fallback",
+      "access_method": "public_csv_download_research_only",
+      "connector_type": "yahoo_finance_csv",
+      "base_url": "https://query1.finance.yahoo.com",
+      "notes": "Research and educational MVP fallback only; not a production-grade dependency."
+    },
+    {
+      "source_id": "local_file",
+      "name": "Local source file",
+      "source_class": "fallback",
+      "access_method": "local_file",
+      "connector_type": "local_file",
+      "base_url": null,
+      "notes": "Useful for manually downloaded official data and deterministic tests."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "dataset_id": "cpi_india",
+  "dataset_name": "India CPI",
+  "domain": "macro",
+  "classification": "supporting",
+  "frequency": "monthly",
+  "source_id": "mospi",
+  "source": "Ministry of Statistics and Programme Implementation",
+  "source_class": "official",
+  "source_reference": "https://www.mospi.gov.in/data?start_date=2010-01-01",
+  "fallback_used": false,
+  "fallback_reason": null,
+  "requested_start_date": "2010-01-01",
+  "requested_end_date": "latest_available",
+  "actual_first_observation": null,
+  "actual_last_observation": null,
+  "ingestion_timestamp": "2026-08-19T12:57:15.281295+00:00",
+  "source_timestamp": null,
+  "availability_status": "READY",
+  "record_count": null,
+  "schema_version": "raw.v1",
+  "dataset_version": "v0.1.0",
+  "file_hash": "bbaee616d305aa880737d337f093775f4915dddf8eba96ff09b0faf5364d634d",
+  "raw_path": "D:\\PROJECT\\Kotak Projects\\bayesian-regime-detection-engine\\data\\raw\\macro\\cpi_india\\monthly\\year=2026\\cpi_india_20260819T125715Z_bbaee616d305.csv",
+  "provider_metadata": {
+    "official_download": true
+  }
+}
