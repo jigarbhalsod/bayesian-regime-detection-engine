@@ -1,4 +1,4 @@
-"""Processed data storage utilities for Phase 5 Group B."""
+"""Processed data storage utilities for Phase 5 Groups B and C."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from src.data.config import PROCESSED_DATA_DIR, METADATA_DIR
+from src.data.config import METADATA_DIR, PROCESSED_DATA_DIR
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,7 @@ class ProcessedDataResult:
 
 
 class ProcessedDataStore:
-    """Writes validated records and processing metadata."""
+    """Writes processed records and processing metadata."""
 
     def __init__(
         self,
@@ -41,7 +41,8 @@ class ProcessedDataStore:
         dataset_id: str,
         records: list[dict[str, Any]],
         source_path: str | Path,
-        quality_report: Any,
+        quality_report: Any = None,
+        processing_steps: list[str] | None = None,
     ) -> ProcessedDataResult:
         """Write processed records and associated metadata."""
 
@@ -64,7 +65,9 @@ class ProcessedDataStore:
         ) as handle:
             writer = csv.DictWriter(handle, fieldnames=fieldnames)
             writer.writeheader()
-            writer.writerows(records)
+
+            if records:
+                writer.writerows(records)
 
         content = processed_path.read_bytes()
         file_hash = hashlib.sha256(content).hexdigest()
@@ -76,6 +79,7 @@ class ProcessedDataStore:
             "created_at_utc": datetime.now(timezone.utc).isoformat(),
             "record_count": len(records),
             "file_hash_sha256": file_hash,
+            "processing_steps": processing_steps or [],
             "quality_report": self._serialize_quality_report(
                 quality_report
             ),
@@ -107,8 +111,11 @@ class ProcessedDataStore:
     @staticmethod
     def _serialize_quality_report(
         quality_report: Any,
-    ) -> dict[str, Any]:
-        """Convert a dataclass quality report into JSON-safe metadata."""
+    ) -> dict[str, Any] | None:
+        """Convert a quality report into JSON-safe metadata."""
+        if quality_report is None:
+            return None
+
         try:
             return asdict(quality_report)
         except TypeError:

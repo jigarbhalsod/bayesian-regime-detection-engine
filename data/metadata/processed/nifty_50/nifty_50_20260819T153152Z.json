@@ -1,0 +1,30 @@
+{
+  "dataset_id": "nifty_50",
+  "source_path": "C:\\Users\\Jigar\\AppData\\Local\\Temp\\pytest-of-Jigar\\pytest-17\\test_phase5_final_pipeline_out0\\nifty_final.json",
+  "processed_path": "D:\\PROJECT\\Kotak Projects\\bayesian-regime-detection-engine\\data\\processed\\nifty_50\\nifty_50_20260819T153152Z.csv",
+  "created_at_utc": "2026-08-19T15:31:52.600356+00:00",
+  "record_count": 3,
+  "file_hash_sha256": "42399eaf57f76d0d56cbbee66f4050356713172a4f6371732dda3462625443b0",
+  "processing_steps": [
+    "loading",
+    "parsing",
+    "standardization",
+    "cleaning",
+    "transformation",
+    "alignment",
+    "validation",
+    "processed_storage"
+  ],
+  "quality_report": {
+    "dataset_id": "nifty_50",
+    "total_records": 3,
+    "valid_records": 3,
+    "invalid_records": 0,
+    "duplicate_records": 0,
+    "missing_required_fields": {
+      "date": 0,
+      "close": 0
+    },
+    "errors": []
+  }
+}

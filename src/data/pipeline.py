@@ -22,6 +22,7 @@ class ProcessingPipelineResult:
     source_path: Path
     input_record_count: int
     output_record_count: int
+    records: list[dict[str, Any]]
     quality_report: Any
     storage_result: ProcessedDataResult
 
@@ -56,6 +57,7 @@ class DataProcessingPipeline:
         source_path = Path(source_path)
 
         raw_content = self.loader.load(source_path)
+
         parsed_records = self.parser.parse(
             dataset_id=dataset_id,
             raw_content=raw_content,
@@ -89,6 +91,7 @@ class DataProcessingPipeline:
             source_path=source_path,
             input_record_count=len(parsed_records),
             output_record_count=len(cleaned_records),
+            records=cleaned_records,
             quality_report=quality_report,
             storage_result=storage_result,
         )
