@@ -39,14 +39,21 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
         feature_names = self._feature_names()
 
         closes = [
-            self._to_float(record.get(close_column))
+            self._to_float(
+                record.get(close_column)
+            )
             for record in transformed_records
         ]
 
-        for index, record in enumerate(transformed_records):
+        for index, record in enumerate(
+            transformed_records
+        ):
             current_close = closes[index]
 
-            if current_close is None or current_close <= 0:
+            if (
+                current_close is None
+                or current_close <= 0
+            ):
                 self._set_missing_features(
                     record,
                     feature_names,
@@ -89,9 +96,11 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
     ) -> None:
         """Add simple moving average and price/SMA features."""
 
-        for period in self.config.sma_periods:
+        for period in self.config.resolved_sma_periods:
             sma_name = f"feature__sma_{period}d"
-            ratio_name = f"feature__price_to_sma_{period}d"
+            ratio_name = (
+                f"feature__price_to_sma_{period}d"
+            )
 
             window = self._complete_window(
                 closes=closes,
@@ -107,11 +116,13 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
             sma = sum(window) / period
 
             record[sma_name] = sma
-            record[ratio_name] = (
-                current_close / sma
-                if sma != 0
-                else None
-            )
+
+            if sma == 0:
+                record[ratio_name] = None
+            else:
+                record[ratio_name] = (
+                    current_close / sma
+                )
 
     def _add_ema_features(
         self,
@@ -123,9 +134,11 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
     ) -> None:
         """Add EMA and price/EMA features using historical data only."""
 
-        for period in self.config.ema_periods:
+        for period in self.config.resolved_ema_periods:
             ema_name = f"feature__ema_{period}d"
-            ratio_name = f"feature__price_to_ema_{period}d"
+            ratio_name = (
+                f"feature__price_to_ema_{period}d"
+            )
 
             window = self._complete_window(
                 closes=closes,
@@ -138,7 +151,9 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
                 record[ratio_name] = None
                 continue
 
-            multiplier = 2.0 / (period + 1.0)
+            multiplier = (
+                2.0 / (period + 1.0)
+            )
 
             ema = window[0]
 
@@ -148,11 +163,13 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
                 ) + ema
 
             record[ema_name] = ema
-            record[ratio_name] = (
-                current_close / ema
-                if ema != 0
-                else None
-            )
+
+            if ema == 0:
+                record[ratio_name] = None
+            else:
+                record[ratio_name] = (
+                    current_close / ema
+                )
 
     def _add_momentum_features(
         self,
@@ -165,7 +182,9 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
         """Add absolute momentum and rate-of-change features."""
 
         for period in self.config.momentum_periods:
-            momentum_name = f"feature__momentum_{period}d"
+            momentum_name = (
+                f"feature__momentum_{period}d"
+            )
             roc_name = f"feature__roc_{period}d"
 
             past_index = index - period
@@ -177,7 +196,10 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
 
             past_close = closes[past_index]
 
-            if past_close is None or past_close <= 0:
+            if (
+                past_close is None
+                or past_close <= 0
+            ):
                 record[momentum_name] = None
                 record[roc_name] = None
                 continue
@@ -220,6 +242,7 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
         return [
             float(value)
             for value in window
+            if value is not None
         ]
 
     def _feature_names(self) -> tuple[str, ...]:
@@ -227,7 +250,7 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
 
         names: list[str] = []
 
-        for period in self.config.sma_periods:
+        for period in self.config.resolved_sma_periods:
             names.extend(
                 (
                     f"feature__sma_{period}d",
@@ -235,7 +258,7 @@ class MomentumFeatureTransformer(BaseFeatureTransformer):
                 )
             )
 
-        for period in self.config.ema_periods:
+        for period in self.config.resolved_ema_periods:
             names.extend(
                 (
                     f"feature__ema_{period}d",

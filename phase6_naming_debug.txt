@@ -1,0 +1,976 @@
+
+==================== RETURNS.PY ====================
+"""Return-based feature engineering for Phase 6."""
+
+from __future__ import annotations
+
+import math
+from typing import Any
+
+from src.features.base import (
+    BaseFeatureTransformer,
+    FeatureResult,
+)
+from src.features.config import FeatureConfig
+
+
+class ReturnFeatureTransformer(BaseFeatureTransformer):
+    """Creates historical return-based features without look-ahead bias."""
+
+    name = "returns"
+
+    def __init__(
+        self,
+        config: FeatureConfig | None = None,
+    ) -> None:
+        self.config = config or FeatureConfig()
+
+    def transform(
+        self,
+        records: list[dict[str, Any]],
+    ) -> FeatureResult:
+        """Create return features using only current and past prices."""
+
+        close_column = self.config.target_close_column
+
+        transformed_records = [
+            dict(record)
+            for record in records
+        ]
+
+        feature_names = self._feature_names()
+
+        for index, record in enumerate(transformed_records):
+            current_close = self._to_float(
+                record.get(close_column)
+            )
+
+            if current_close is None or current_close <= 0:
+                self._set_missing_features(
+                    record,
+                    feature_names,
+                )
+                continue
+
+            previous_close = self._value_at(
+                transformed_records,
+                index - 1,
+                close_column,
+            )
+
+            if previous_close is not None and previous_close > 0:
+                record["feature__return_1d"] = (
+                    current_close / previous_close
+                ) - 1.0
+
+                record["feature__log_return_1d"] = math.log(
+                    current_close / previous_close
+                )
+            else:
+                record["feature__return_1d"] = None
+                record["feature__log_return_1d"] = None
+
+            for period in self.config.return_periods:
+                feature_name = (
+                    f"feature__return_{period}d"
+                )
+
+                if period == 1:
+                    continue
+
+                past_close = self._value_at(
+                    transformed_records,
+                    index - period,
+                    close_column,
+                )
+
+                if past_close is None or past_close <= 0:
+                    record[feature_name] = None
+                    continue
+
+                record[feature_name] = (
+                    current_close / past_close
+                ) - 1.0
+
+        return FeatureResult(
+            records=transformed_records,
+            created_features=feature_names,
+        )
+
+    def _feature_names(self) -> tuple[str, ...]:
+        """Return the complete set of features created."""
+
+        names = [
+            "feature__return_1d",
+            "feature__log_return_1d",
+        ]
+
+        for period in self.config.return_periods:
+            if period != 1:
+                names.append(
+                    f"feature__return_{period}d"
+                )
+
+        return tuple(names)
+
+    @staticmethod
+    def _to_float(
+        value: Any,
+    ) -> float | None:
+        """Convert a numeric value to float when valid."""
+
+        if value is None:
+            return None
+
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            return None
+
+        if not math.isfinite(numeric_value):
+            return None
+
+        return numeric_value
+
+    def _value_at(
+        self,
+        records: list[dict[str, Any]],
+        index: int,
+        column: str,
+    ) -> float | None:
+        """Return a valid numeric value at a historical index."""
+
+        if index < 0 or index >= len(records):
+            return None
+
+        return self._to_float(
+            records[index].get(column)
+        )
+
+    @staticmethod
+    def _set_missing_features(
+        record: dict[str, Any],
+        feature_names: tuple[str, ...],
+    ) -> None:
+        """Set all generated features to missing."""
+
+        for feature_name in feature_names:
+            record[feature_name] = None
+
+==================== TECHNICAL.PY ====================
+"""Technical indicator feature engineering for Phase 6."""
+
+from __future__ import annotations
+
+import math
+from typing import Any
+
+from src.features.base import (
+    BaseFeatureTransformer,
+    FeatureResult,
+)
+from src.features.config import FeatureConfig
+
+
+class TechnicalFeatureTransformer(BaseFeatureTransformer):
+    """Creates technical indicators using chronological market history."""
+
+    name = "technical"
+
+    def __init__(
+        self,
+        config: FeatureConfig | None = None,
+    ) -> None:
+        self.config = config or FeatureConfig()
+
+    def transform(
+        self,
+        records: list[dict[str, Any]],
+    ) -> FeatureResult:
+        """Create RSI, MACD, and Bollinger Band features."""
+
+        transformed_records = [
+            dict(record)
+            for record in records
+        ]
+
+        closes = [
+            self._valid_close(
+                record.get(self.config.target_close_column)
+            )
+            for record in transformed_records
+        ]
+
+        rsi_values = self._calculate_rsi(closes)
+
+        ema_fast = self._calculate_ema(
+            closes,
+            self.config.macd_fast_period,
+        )
+
+        ema_slow = self._calculate_ema(
+            closes,
+            self.config.macd_slow_period,
+        )
+
+        macd_values = self._subtract_series(
+            ema_fast,
+            ema_slow,
+        )
+
+        macd_signal = self._calculate_ema(
+            macd_values,
+            self.config.macd_signal_period,
+        )
+
+        feature_names = self._feature_names()
+
+        for index, record in enumerate(transformed_records):
+            macd_value = macd_values[index]
+            signal_value = macd_signal[index]
+
+            record["feature__rsi"] = rsi_values[index]
+            record["feature__macd"] = macd_value
+            record["feature__macd_signal"] = signal_value
+
+            if (
+                macd_value is None
+                or signal_value is None
+            ):
+                record["feature__macd_histogram"] = None
+            else:
+                record["feature__macd_histogram"] = (
+                    macd_value - signal_value
+                )
+
+            self._add_bollinger_features(
+                record=record,
+                closes=closes,
+                index=index,
+            )
+
+        return FeatureResult(
+            records=transformed_records,
+            created_features=feature_names,
+        )
+
+    def _calculate_rsi(
+        self,
+        closes: list[float | None],
+    ) -> list[float | None]:
+        """Calculate RSI from complete historical close windows."""
+
+        period = self.config.resolved_rsi_period
+
+        values: list[float | None] = [
+            None
+        ] * len(closes)
+
+        for index in range(len(closes)):
+            start_index = index - period
+
+            if start_index < 0:
+                continue
+
+            window = closes[
+                start_index:index + 1
+            ]
+
+            if (
+                len(window) != period + 1
+                or any(
+                    value is None
+                    for value in window
+                )
+            ):
+                continue
+
+            numeric_window = [
+                float(value)
+                for value in window
+                if value is not None
+            ]
+
+            gains: list[float] = []
+            losses: list[float] = []
+
+            for previous, current in zip(
+                numeric_window[:-1],
+                numeric_window[1:],
+            ):
+                change = current - previous
+
+                gains.append(
+                    max(change, 0.0)
+                )
+
+                losses.append(
+                    abs(min(change, 0.0))
+                )
+
+            average_gain = (
+                sum(gains) / period
+            )
+
+            average_loss = (
+                sum(losses) / period
+            )
+
+            if average_loss == 0:
+                values[index] = (
+                    100.0
+                    if average_gain > 0
+                    else 50.0
+                )
+                continue
+
+            relative_strength = (
+                average_gain / average_loss
+            )
+
+            values[index] = (
+                100.0
+                - (
+                    100.0
+                    / (
+                        1.0
+                        + relative_strength
+                    )
+                )
+            )
+
+        return values
+
+    @staticmethod
+    def _calculate_ema(
+        values: list[float | None],
+        period: int,
+    ) -> list[float | None]:
+        """Calculate EMA using a complete initial window."""
+
+        result: list[float | None] = [
+            None
+        ] * len(values)
+
+        multiplier = (
+            2.0 / (period + 1.0)
+        )
+
+        for index in range(len(values)):
+            start_index = (
+                index - period + 1
+            )
+
+            if start_index < 0:
+                continue
+
+            window = values[
+                start_index:index + 1
+            ]
+
+            if (
+                len(window) != period
+                or any(
+                    value is None
+                    for value in window
+                )
+            ):
+                continue
+
+            if index == period - 1:
+                result[index] = (
+                    sum(
+                        float(value)
+                        for value in window
+                        if value is not None
+                    )
+                    / period
+                )
+                continue
+
+            previous_ema = result[index - 1]
+            current_value = values[index]
+
+            if (
+                previous_ema is None
+                or current_value is None
+            ):
+                continue
+
+            result[index] = (
+                (
+                    current_value
+                    - previous_ema
+                )
+                * multiplier
+                + previous_ema
+            )
+
+        return result
+
+    @staticmethod
+    def _subtract_series(
+        first: list[float | None],
+        second: list[float | None],
+    ) -> list[float | None]:
+        """Subtract two aligned feature series."""
+
+        values: list[float | None] = []
+
+        for first_value, second_value in zip(
+            first,
+            second,
+        ):
+            if (
+                first_value is None
+                or second_value is None
+            ):
+                values.append(None)
+            else:
+                values.append(
+                    first_value - second_value
+                )
+
+        return values
+
+    def _add_bollinger_features(
+        self,
+        *,
+        record: dict[str, Any],
+        closes: list[float | None],
+        index: int,
+    ) -> None:
+        """Add Bollinger Band features using a complete rolling window."""
+
+        period = self.config.resolved_bollinger_period
+
+        start_index = (
+            index - period + 1
+        )
+
+        if start_index < 0:
+            self._set_bollinger_missing(record)
+            return
+
+        window = closes[
+            start_index:index + 1
+        ]
+
+        if (
+            len(window) != period
+            or any(
+                value is None
+                for value in window
+            )
+        ):
+            self._set_bollinger_missing(record)
+            return
+
+        numeric_window = [
+            float(value)
+            for value in window
+            if value is not None
+        ]
+
+        middle_band = (
+            sum(numeric_window)
+            / period
+        )
+
+        variance = (
+            sum(
+                (
+                    value - middle_band
+                ) ** 2
+                for value in numeric_window
+            )
+            / period
+        )
+
+        standard_deviation = math.sqrt(
+            variance
+        )
+
+        offset = (
+            self.config.bollinger_std_multiplier
+            * standard_deviation
+        )
+
+        upper_band = (
+            middle_band + offset
+        )
+
+        lower_band = (
+            middle_band - offset
+        )
+
+        current_close = numeric_window[-1]
+
+        record[
+            "feature__bollinger_middle"
+        ] = middle_band
+
+        record[
+            "feature__bollinger_upper"
+        ] = upper_band
+
+        record[
+            "feature__bollinger_lower"
+        ] = lower_band
+
+        band_width = (
+            upper_band - lower_band
+        )
+
+        if band_width == 0:
+            record[
+                "feature__bollinger_position"
+            ] = None
+        else:
+            record[
+                "feature__bollinger_position"
+            ] = (
+                (
+                    current_close - lower_band
+                )
+                / band_width
+            )
+
+    @staticmethod
+    def _set_bollinger_missing(
+        record: dict[str, Any],
+    ) -> None:
+        """Set Bollinger Band features to missing."""
+
+        record[
+            "feature__bollinger_middle"
+        ] = None
+
+        record[
+            "feature__bollinger_upper"
+        ] = None
+
+        record[
+            "feature__bollinger_lower"
+        ] = None
+
+        record[
+            "feature__bollinger_position"
+        ] = None
+
+    @staticmethod
+    def _valid_close(
+        value: Any,
+    ) -> float | None:
+        """Convert a close value to a valid positive finite float."""
+
+        if value is None:
+            return None
+
+        try:
+            numeric_value = float(value)
+        except (
+            TypeError,
+            ValueError,
+        ):
+            return None
+
+        if (
+            not math.isfinite(numeric_value)
+            or numeric_value <= 0
+        ):
+            return None
+
+        return numeric_value
+
+    @staticmethod
+    def _feature_names() -> tuple[str, ...]:
+        """Return every feature created by this transformer."""
+
+        return (
+            "feature__rsi",
+            "feature__macd",
+            "feature__macd_signal",
+            "feature__macd_histogram",
+            "feature__bollinger_middle",
+            "feature__bollinger_upper",
+            "feature__bollinger_lower",
+            "feature__bollinger_position",
+        )
+
+
+# Backward-compatible alias.
+TechnicalIndicatorTransformer = TechnicalFeatureTransformer
+
+==================== PIPELINE.PY ====================
+"""Feature engineering pipeline orchestration."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from src.features.base import FeatureResult
+from src.features.registry import FeatureRegistry
+
+
+@dataclass(frozen=True)
+class FeaturePipelineResult:
+    """Result of running the feature engineering pipeline."""
+
+    records: list[dict[str, Any]]
+    created_features: tuple[str, ...]
+    executed_transformers: tuple[str, ...]
+
+
+class FeatureEngineeringPipeline:
+    """Runs registered feature transformers in deterministic order."""
+
+    def __init__(
+        self,
+        registry: FeatureRegistry,
+    ) -> None:
+        self.registry = registry
+
+    def run(
+        self,
+        records: list[dict[str, Any]],
+    ) -> FeaturePipelineResult:
+        """Run all registered transformers on chronological records."""
+
+        working_records = [
+            dict(record)
+            for record in records
+        ]
+
+        created_features: list[str] = []
+        executed_transformers: list[str] = []
+
+        for transformer in self.registry.values():
+            result: FeatureResult = transformer.transform(
+                working_records
+            )
+
+            working_records = result.records
+
+            created_features.extend(
+                result.created_features
+            )
+
+            executed_transformers.append(
+                transformer.name
+            )
+
+        return FeaturePipelineResult(
+            records=working_records,
+            created_features=tuple(created_features),
+            executed_transformers=tuple(executed_transformers),
+        )
+
+==================== INTEGRATION TEST ====================
+"""End-to-end integration tests for Phase 6 feature engineering."""
+
+from __future__ import annotations
+
+from copy import deepcopy
+from typing import Any
+
+from src.features.calendar import CalendarFeatureTransformer
+from src.features.config import FeatureConfig
+from src.features.cross_asset import CrossAssetFeatureTransformer
+from src.features.macro import MacroFeatureTransformer
+from src.features.momentum import MomentumFeatureTransformer
+from src.features.pipeline import FeatureEngineeringPipeline
+from src.features.price import PriceFeatureTransformer
+from src.features.registry import FeatureRegistry
+from src.features.returns import ReturnFeatureTransformer
+from src.features.technical import TechnicalIndicatorTransformer
+from src.features.volatility import VolatilityFeatureTransformer
+from src.features.volume import VolumeFeatureTransformer
+
+
+def build_records() -> list[dict[str, Any]]:
+    """Build realistic Phase 5-compatible records for integration testing."""
+
+    return [
+        {
+            "date": "2024-01-29",
+            "close": 100.0,
+            "high": 102.0,
+            "low": 98.0,
+            "volume": 1000.0,
+            "bank_nifty_close": 200.0,
+            "india_vix_close": 20.0,
+            "repo_rate": 6.50,
+        },
+        {
+            "date": "2024-01-30",
+            "close": 105.0,
+            "high": 107.0,
+            "low": 103.0,
+            "volume": 1200.0,
+            "bank_nifty_close": 210.0,
+            "india_vix_close": 19.0,
+            "repo_rate": 6.50,
+        },
+        {
+            "date": "2024-01-31",
+            "close": 110.0,
+            "high": 112.0,
+            "low": 108.0,
+            "volume": 1500.0,
+            "bank_nifty_close": 220.0,
+            "india_vix_close": 18.0,
+            "repo_rate": 6.50,
+        },
+        {
+            "date": "2024-02-01",
+            "close": 108.0,
+            "high": 111.0,
+            "low": 106.0,
+            "volume": 1300.0,
+            "bank_nifty_close": 216.0,
+            "india_vix_close": 18.5,
+            "repo_rate": 6.50,
+        },
+        {
+            "date": "2024-02-02",
+            "close": 115.0,
+            "high": 117.0,
+            "low": 113.0,
+            "volume": 1800.0,
+            "bank_nifty_close": 230.0,
+            "india_vix_close": 17.0,
+            "repo_rate": 6.75,
+        },
+        {
+            "date": "2024-02-05",
+            "close": 120.0,
+            "high": 123.0,
+            "low": 118.0,
+            "volume": 2000.0,
+            "bank_nifty_close": 240.0,
+            "india_vix_close": 16.0,
+            "repo_rate": 6.75,
+        },
+    ]
+
+
+def make_config() -> FeatureConfig:
+    """Create a compact configuration for end-to-end testing."""
+
+    return FeatureConfig(
+        target_close_column="close",
+        target_returns_column="close",
+        target_volume_column="volume",
+        return_periods=(1, 2),
+        price_periods=(1, 2),
+        price_rolling_periods=(2,),
+        momentum_periods=(2,),
+        trend_periods=(2,),
+        volatility_periods=(2,),
+        volume_periods=(2,),
+        technical_periods=(2,),
+        bollinger_periods=(2,),
+        cross_asset_columns=(
+            "bank_nifty_close",
+            "india_vix_close",
+        ),
+        cross_asset_periods=(2,),
+        macro_columns=("repo_rate",),
+        macro_periods=(2,),
+    )
+
+
+def build_full_pipeline(
+    config: FeatureConfig,
+) -> FeatureEngineeringPipeline:
+    """Register every Phase 6 transformer in deterministic order."""
+
+    registry = FeatureRegistry()
+
+    registry.register(ReturnFeatureTransformer(config))
+    registry.register(PriceFeatureTransformer(config))
+    registry.register(MomentumFeatureTransformer(config))
+    registry.register(VolatilityFeatureTransformer(config))
+    registry.register(VolumeFeatureTransformer(config))
+    registry.register(TechnicalIndicatorTransformer(config))
+    registry.register(CrossAssetFeatureTransformer(config))
+    registry.register(MacroFeatureTransformer(config))
+    registry.register(CalendarFeatureTransformer())
+
+    return FeatureEngineeringPipeline(registry)
+
+
+def test_full_phase6_pipeline_runs_successfully() -> None:
+    """Every Phase 6 transformer should run together."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    result = pipeline.run(build_records())
+
+    assert len(result.records) == 6
+    assert len(result.created_features) > 0
+
+    assert result.executed_transformers == (
+        "returns",
+        "price",
+        "momentum",
+        "volatility",
+        "volume",
+        "technical",
+        "cross_asset",
+        "macro",
+        "calendar",
+    )
+
+
+def test_full_pipeline_creates_features_from_every_group() -> None:
+    """Integration output should contain features from every transformer."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    result = pipeline.run(build_records())
+
+    feature_names = set(result.created_features)
+
+    expected_prefixes = (
+        "feature__returns__",
+        "feature__price__",
+        "feature__momentum__",
+        "feature__volatility__",
+        "feature__volume__",
+        "feature__technical__",
+        "feature__cross_asset__",
+        "feature__macro__",
+        "feature__calendar__",
+    )
+
+    for prefix in expected_prefixes:
+        assert any(
+            feature_name.startswith(prefix)
+            for feature_name in feature_names
+        )
+
+
+def test_full_pipeline_preserves_original_columns() -> None:
+    """Feature engineering should preserve all original Phase 5 columns."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    records = build_records()
+    result = pipeline.run(records)
+
+    for original, transformed in zip(
+        records,
+        result.records,
+        strict=True,
+    ):
+        for key, value in original.items():
+            assert transformed[key] == value
+
+
+def test_full_pipeline_does_not_mutate_input() -> None:
+    """End-to-end processing must not modify source records."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    records = build_records()
+    original_records = deepcopy(records)
+
+    pipeline.run(records)
+
+    assert records == original_records
+
+
+def test_full_pipeline_has_consistent_feature_schema() -> None:
+    """Every output record should expose the complete feature schema."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    result = pipeline.run(build_records())
+
+    for record in result.records:
+        for feature_name in result.created_features:
+            assert feature_name in record
+
+
+def test_full_pipeline_handles_early_history_with_missing_features() -> None:
+    """Early records should remain valid without enough historical data."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    result = pipeline.run(build_records())
+
+    first_record = result.records[0]
+
+    assert first_record[
+        "feature__returns__simple_return_1"
+    ] is None
+
+    assert first_record[
+        "feature__volatility__variance_2"
+    ] is None
+
+    assert first_record[
+        "feature__calendar__month"
+    ] == 1
+
+
+def test_full_pipeline_generates_later_rolling_features() -> None:
+    """Later records should contain computed rolling features."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    result = pipeline.run(build_records())
+
+    last_record = result.records[-1]
+
+    assert last_record[
+        "feature__returns__simple_return_1"
+    ] is not None
+
+    assert last_record[
+        "feature__price__rolling_mean_2"
+    ] is not None
+
+    assert last_record[
+        "feature__volatility__volatility_2"
+    ] is not None
+
+    assert last_record[
+        "feature__volume__rolling_mean_2"
+    ] is not None
+
+
+def test_full_pipeline_handles_missing_data_end_to_end() -> None:
+    """Missing values should produce missing dependent features, not crashes."""
+
+    pipeline = build_full_pipeline(make_config())
+
+    records = build_records()
+
+    records[3]["close"] = None
+    records[3]["volume"] = None
+    records[3]["bank_nifty_close"] = None
+    records[3]["repo_rate"] = None
+
+    result = pipeline.run(records)
+
+    affected_record = result.records[3]
+
+    assert affected_record[
+        "feature__returns__simple_return_1"
+    ] is None
+
+    assert affected_record[
+        "feature__price__change_1"
+    ] is None
+
+    assert affected_record[
+        "feature__volume__change_1"
+    ] is None
+
+    assert affected_record[
+        "feature__calendar__month"
+    ] == 2

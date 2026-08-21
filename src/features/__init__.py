@@ -13,8 +13,15 @@ from src.features.pipeline import (
 from src.features.price import PriceFeatureTransformer
 from src.features.registry import FeatureRegistry
 from src.features.returns import ReturnFeatureTransformer
+from src.features.volatility import VolatilityFeatureTransformer
+from src.features.volume import VolumeFeatureTransformer
+from src.features.technical import TechnicalIndicatorTransformer
 
 __all__ = [
+    "ReturnFeatureTransformer",
+    "VolatilityFeatureTransformer",
+    "VolumeFeatureTransformer",
+    "TechnicalIndicatorTransformer",
     "BaseFeatureTransformer",
     "FeatureConfig",
     "FeatureEngineeringPipeline",
@@ -24,4 +31,6 @@ __all__ = [
     "MomentumFeatureTransformer",
     "PriceFeatureTransformer",
     "ReturnFeatureTransformer",
+    "VolatilityFeatureTransformer",
+    "VolumeFeatureTransformer",
 ]
