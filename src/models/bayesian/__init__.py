@@ -1,18 +1,12 @@
-from .config import BayesianModelConfig
-from .mc_dropout import MCDropoutInference
-from .model import BayesianPrediction, BayesianRegimeModel
-from .network import BayesianRegimeNetwork
-from .uncertainty import (
-    BayesianUncertaintyEstimator,
-    UncertaintyResult,
+from .base import (
+    BaseBayesianModel,
+    BayesianModelResult,
 )
+from .config import BayesianModelConfig
+
 
 __all__ = [
+    "BaseBayesianModel",
     "BayesianModelConfig",
-    "BayesianRegimeNetwork",
-    "MCDropoutInference",
-    "BayesianUncertaintyEstimator",
-    "UncertaintyResult",
-    "BayesianPrediction",
-    "BayesianRegimeModel",
+    "BayesianModelResult",
 ]
