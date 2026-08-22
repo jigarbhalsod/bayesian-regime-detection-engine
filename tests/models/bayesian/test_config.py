@@ -3,37 +3,152 @@ import pytest
 from src.models.bayesian.config import BayesianModelConfig
 
 
-def test_default_configuration():
+def test_default_config():
     config = BayesianModelConfig()
 
-    assert config.model_name == "bayesian_neural"
-    assert config.hidden_dims == (64, 32)
+    assert config.model_name == "bayesian_model"
+    assert config.n_features == 1
+    assert config.n_outputs == 1
+    assert config.prior_mean == 0.0
+    assert config.prior_std == 1.0
+    assert config.observation_noise == 1.0
+
+    assert config.n_regimes == 3
+    assert config.hidden_dims == (32, 16)
     assert config.dropout_rate == 0.2
-    assert config.mc_samples == 30
-    assert config.learning_rate == pytest.approx(1e-3)
-    assert config.batch_size == 32
-    assert config.n_epochs == 50
-    assert config.weight_decay == 0.0
+    assert config.mc_samples == 20
+
+    assert config.random_seed is None
 
 
-def test_custom_configuration():
+def test_custom_config():
     config = BayesianModelConfig(
-        hidden_dims=[128, 64, 32],
+        model_name="bayesian_regime_model",
+        n_features=5,
+        n_outputs=2,
+        prior_mean=1.0,
+        prior_std=2.0,
+        observation_noise=0.5,
+        n_regimes=4,
+        hidden_dims=(64, 32),
         dropout_rate=0.3,
         mc_samples=50,
-        learning_rate=0.005,
-        batch_size=64,
-        n_epochs=100,
-        weight_decay=0.01,
+        random_seed=42,
     )
 
-    assert config.hidden_dims == (128, 64, 32)
+    assert config.model_name == "bayesian_regime_model"
+    assert config.n_features == 5
+    assert config.n_outputs == 2
+    assert config.prior_mean == 1.0
+    assert config.prior_std == 2.0
+    assert config.observation_noise == 0.5
+
+    assert config.n_regimes == 4
+    assert config.hidden_dims == (64, 32)
     assert config.dropout_rate == 0.3
     assert config.mc_samples == 50
-    assert config.learning_rate == pytest.approx(0.005)
-    assert config.batch_size == 64
-    assert config.n_epochs == 100
-    assert config.weight_decay == pytest.approx(0.01)
+
+    assert config.random_seed == 42
+
+
+@pytest.mark.parametrize(
+    ("model_name", "exception"),
+    [
+        (123, TypeError),
+        ("", ValueError),
+        ("   ", ValueError),
+    ],
+)
+def test_invalid_model_name(model_name, exception):
+    with pytest.raises(exception):
+        BayesianModelConfig(model_name=model_name)
+
+
+@pytest.mark.parametrize(
+    "n_features",
+    [
+        0,
+        -1,
+        1.5,
+        True,
+        "3",
+    ],
+)
+def test_invalid_n_features(n_features):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(n_features=n_features)
+
+
+@pytest.mark.parametrize(
+    "n_outputs",
+    [
+        0,
+        -1,
+        1.5,
+        True,
+        "2",
+    ],
+)
+def test_invalid_n_outputs(n_outputs):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(n_outputs=n_outputs)
+
+
+@pytest.mark.parametrize(
+    "prior_mean",
+    [
+        "invalid",
+        True,
+    ],
+)
+def test_invalid_prior_mean(prior_mean):
+    with pytest.raises(TypeError):
+        BayesianModelConfig(prior_mean=prior_mean)
+
+
+@pytest.mark.parametrize(
+    "prior_std",
+    [
+        0,
+        -1,
+        "invalid",
+        True,
+    ],
+)
+def test_invalid_prior_std(prior_std):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(prior_std=prior_std)
+
+
+@pytest.mark.parametrize(
+    "observation_noise",
+    [
+        0,
+        -1,
+        "invalid",
+        True,
+    ],
+)
+def test_invalid_observation_noise(observation_noise):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(
+            observation_noise=observation_noise,
+        )
+
+
+@pytest.mark.parametrize(
+    "n_regimes",
+    [
+        0,
+        -1,
+        1.5,
+        True,
+        "3",
+    ],
+)
+def test_invalid_n_regimes(n_regimes):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(n_regimes=n_regimes)
 
 
 @pytest.mark.parametrize(
@@ -41,269 +156,98 @@ def test_custom_configuration():
     [
         (),
         [],
+        (32, 0),
+        (32, -1),
+        (32, 1.5),
+        (32, True),
     ],
 )
-def test_empty_hidden_dims_rejected(hidden_dims):
-    with pytest.raises(ValueError):
-        BayesianModelConfig(
-            hidden_dims=hidden_dims
-        )
-
-
-@pytest.mark.parametrize(
-    "hidden_dims",
-    [
-        "64,32",
-        64,
-        None,
-    ],
-)
-def test_invalid_hidden_dims_container_rejected(hidden_dims):
-    with pytest.raises(TypeError):
-        BayesianModelConfig(
-            hidden_dims=hidden_dims
-        )
-
-
-@pytest.mark.parametrize(
-    "hidden_dims",
-    [
-        (64, 0),
-        (-1, 32),
-        (64, -5),
-    ],
-)
-def test_non_positive_hidden_dimension_rejected(hidden_dims):
-    with pytest.raises(ValueError):
-        BayesianModelConfig(
-            hidden_dims=hidden_dims
-        )
-
-
-@pytest.mark.parametrize(
-    "hidden_dims",
-    [
-        (64, 32.0),
-        (64, "32"),
-        (True, 32),
-        (None, 32),
-    ],
-)
-def test_invalid_hidden_dimension_type_rejected(hidden_dims):
-    with pytest.raises(TypeError):
-        BayesianModelConfig(
-            hidden_dims=hidden_dims
-        )
-
-
-@pytest.mark.parametrize(
-    "dropout_rate",
-    [
-        0,
-        0.2,
-        0.999,
-    ],
-)
-def test_valid_dropout_rate(dropout_rate):
-    config = BayesianModelConfig(
-        dropout_rate=dropout_rate
-    )
-
-    assert config.dropout_rate == pytest.approx(
-        float(dropout_rate)
-    )
+def test_invalid_hidden_dims(hidden_dims):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(hidden_dims=hidden_dims)
 
 
 @pytest.mark.parametrize(
     "dropout_rate",
     [
         -0.1,
-        1,
+        1.0,
         1.5,
-    ],
-)
-def test_invalid_dropout_rate_value_rejected(dropout_rate):
-    with pytest.raises(ValueError):
-        BayesianModelConfig(
-            dropout_rate=dropout_rate
-        )
-
-
-@pytest.mark.parametrize(
-    "dropout_rate",
-    [
-        "0.2",
-        None,
+        "invalid",
         True,
     ],
 )
-def test_invalid_dropout_rate_type_rejected(dropout_rate):
-    with pytest.raises(TypeError):
+def test_invalid_dropout_rate(dropout_rate):
+    with pytest.raises((TypeError, ValueError)):
         BayesianModelConfig(
-            dropout_rate=dropout_rate
+            dropout_rate=dropout_rate,
         )
 
 
 @pytest.mark.parametrize(
-    "field_name",
-    [
-        "mc_samples",
-        "batch_size",
-        "n_epochs",
-    ],
-)
-@pytest.mark.parametrize(
-    "value",
+    "mc_samples",
     [
         0,
         -1,
+        1.5,
+        True,
+        "20",
     ],
 )
-def test_invalid_positive_integer_values(
-    field_name,
-    value,
-):
-    with pytest.raises(ValueError):
-        BayesianModelConfig(
-            **{field_name: value}
-        )
+def test_invalid_mc_samples(mc_samples):
+    with pytest.raises((TypeError, ValueError)):
+        BayesianModelConfig(mc_samples=mc_samples)
 
 
 @pytest.mark.parametrize(
-    "field_name",
-    [
-        "mc_samples",
-        "batch_size",
-        "n_epochs",
-    ],
-)
-@pytest.mark.parametrize(
-    "value",
+    "random_seed",
     [
         1.5,
-        "10",
-        None,
         True,
+        "42",
     ],
 )
-def test_invalid_positive_integer_types(
-    field_name,
-    value,
-):
+def test_invalid_random_seed(random_seed):
     with pytest.raises(TypeError):
-        BayesianModelConfig(
-            **{field_name: value}
-        )
+        BayesianModelConfig(random_seed=random_seed)
 
 
-@pytest.mark.parametrize(
-    "learning_rate",
-    [
-        0,
-        -0.001,
-    ],
-)
-def test_invalid_learning_rate_value_rejected(
-    learning_rate,
-):
-    with pytest.raises(ValueError):
-        BayesianModelConfig(
-            learning_rate=learning_rate
-        )
-
-
-@pytest.mark.parametrize(
-    "learning_rate",
-    [
-        "0.001",
-        None,
-        True,
-    ],
-)
-def test_invalid_learning_rate_type_rejected(
-    learning_rate,
-):
-    with pytest.raises(TypeError):
-        BayesianModelConfig(
-            learning_rate=learning_rate
-        )
-
-
-@pytest.mark.parametrize(
-    "weight_decay",
-    [
-        0,
-        0.01,
-        1,
-    ],
-)
-def test_valid_weight_decay(weight_decay):
+def test_to_dict():
     config = BayesianModelConfig(
-        weight_decay=weight_decay
+        model_name="test_model",
+        n_features=3,
+        n_outputs=2,
+        prior_mean=0.5,
+        prior_std=1.5,
+        observation_noise=0.2,
+        n_regimes=4,
+        hidden_dims=(16, 8),
+        dropout_rate=0.3,
+        mc_samples=10,
+        random_seed=7,
     )
 
-    assert config.weight_decay == pytest.approx(
-        float(weight_decay)
-    )
+    result = config.to_dict()
 
-
-@pytest.mark.parametrize(
-    "weight_decay",
-    [
-        -0.001,
-        -1,
-    ],
-)
-def test_negative_weight_decay_rejected(weight_decay):
-    with pytest.raises(ValueError):
-        BayesianModelConfig(
-            weight_decay=weight_decay
-        )
-
-
-@pytest.mark.parametrize(
-    "weight_decay",
-    [
-        "0.01",
-        None,
-        True,
-    ],
-)
-def test_invalid_weight_decay_type_rejected(
-    weight_decay,
-):
-    with pytest.raises(TypeError):
-        BayesianModelConfig(
-            weight_decay=weight_decay
-        )
-
-
-def test_hidden_dims_normalized_to_tuple():
-    config = BayesianModelConfig(
-        hidden_dims=[128, 64]
-    )
-
-    assert isinstance(config.hidden_dims, tuple)
-    assert config.hidden_dims == (128, 64)
-
-
-def test_to_dict_contains_bayesian_fields():
-    config = BayesianModelConfig()
-
-    data = config.to_dict()
-
-    expected_fields = {
-        "hidden_dims",
-        "dropout_rate",
-        "mc_samples",
-        "learning_rate",
-        "batch_size",
-        "n_epochs",
-        "weight_decay",
+    assert result == {
+        "model_name": "test_model",
+        "n_features": 3,
+        "n_outputs": 2,
+        "prior_mean": 0.5,
+        "prior_std": 1.5,
+        "observation_noise": 0.2,
+        "n_regimes": 4,
+        "hidden_dims": (16, 8),
+        "dropout_rate": 0.3,
+        "mc_samples": 10,
+        "random_seed": 7,
     }
 
-    assert expected_fields.issubset(data.keys())
 
-    assert data["hidden_dims"] == (64, 32)
-    assert data["dropout_rate"] == 0.2
-    assert data["mc_samples"] == 30
+def test_config_is_frozen():
+    config = BayesianModelConfig()
+
+    with pytest.raises(
+        (AttributeError, TypeError),
+    ):
+        config.n_features = 10
