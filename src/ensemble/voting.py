@@ -1,227 +1,148 @@
-from __future__ import annotations
-
-import math
 from collections import Counter
-from typing import Any, Sequence
+from typing import Any, Dict, Iterable
 
-from src.ensemble.weighting import EnsembleWeighting
+from .base import BaseEnsembleStrategy
+from .input import PreparedEnsembleInput
+from .result import EnsembleResult
 
 
-class EnsembleVoting:
+class VotingEnsembleStrategy(BaseEnsembleStrategy):
     """
-    Voting utilities for combining categorical model predictions.
+    Combine model predictions using majority voting.
 
-    Supports:
-    - majority voting
-    - weighted voting
-    - vote counts
-    - vote shares
+    The strategy counts valid model predictions and converts vote
+    counts into a normalized probability distribution.
     """
+
+    STRATEGY_NAME = "voting"
+
+    @property
+    def strategy_name(self) -> str:
+        return self.STRATEGY_NAME
+
+    def combine(
+        self,
+        model_outputs: Iterable[Any],
+    ) -> EnsembleResult:
+        """
+        Combine prepared model outputs using majority voting.
+        """
+
+        if not isinstance(model_outputs, PreparedEnsembleInput):
+            raise TypeError(
+                "VotingEnsembleStrategy requires a "
+                "PreparedEnsembleInput instance."
+            )
+
+        model_outputs.validate(min_models=self.config.min_models)
+
+        predictions = self._extract_predictions(model_outputs)
+
+        vote_counts = Counter(predictions.values())
+
+        if not vote_counts:
+            raise ValueError(
+                "Voting requires at least one valid model prediction."
+            )
+
+        prediction = self._select_prediction(
+            vote_counts,
+            model_outputs.regime_labels,
+        )
+
+        probabilities = self._calculate_vote_probabilities(
+            vote_counts,
+            model_outputs.regime_labels,
+        )
+
+        result = EnsembleResult(
+            prediction=prediction,
+            probabilities=probabilities,
+            model_predictions=predictions,
+            model_probabilities={
+                output.model_name: dict(output.probabilities)
+                for output in model_outputs.outputs
+            },
+            participating_models=model_outputs.participating_models,
+            strategy=self.strategy_name,
+            metadata={
+                "vote_counts": dict(vote_counts),
+            },
+        )
+
+        return self.validate_result(result)
 
     @staticmethod
-    def majority_vote(
-        predictions: Sequence[Any],
+    def _extract_predictions(
+        prepared: PreparedEnsembleInput,
+    ) -> Dict[str, Any]:
+        """
+        Extract and validate predictions from participating models.
+        """
+
+        predictions: Dict[str, Any] = {}
+
+        for output in prepared.outputs:
+            if output.prediction is None:
+                raise ValueError(
+                    f"Model '{output.model_name}' does not have a prediction."
+                )
+
+            predictions[output.model_name] = output.prediction
+
+        return predictions
+
+    @staticmethod
+    def _select_prediction(
+        vote_counts: Counter,
+        regime_labels: list[Any],
     ) -> Any:
         """
-        Return the prediction with the highest number of votes.
+        Select the winner by highest vote count.
 
-        Ties are resolved deterministically by selecting the first
-        prediction that reaches the highest vote count.
+        Ties are resolved using regime_labels order. This makes
+        tie-breaking deterministic and reproducible.
         """
-        validated = EnsembleVoting._validate_predictions(
-            predictions
-        )
 
-        counts = Counter(validated)
-        max_count = max(counts.values())
+        max_votes = max(vote_counts.values())
 
-        for prediction in validated:
-            if counts[prediction] == max_count:
-                return prediction
-
-        raise RuntimeError(
-            "Unable to determine majority vote."
-        )
-
-    @staticmethod
-    def weighted_vote(
-        predictions: Sequence[Any],
-        weights: Sequence[Any] | None = None,
-    ) -> Any:
-        """
-        Return the prediction with the highest total voting weight.
-
-        Equal weighting is used when weights are not supplied.
-        Ties are resolved by selecting the first prediction appearing
-        in the original prediction sequence.
-        """
-        validated = EnsembleVoting._validate_predictions(
-            predictions
-        )
-
-        if weights is None:
-            normalized_weights = (
-                EnsembleWeighting.equal_weights(
-                    len(validated)
-                )
-            )
-        else:
-            normalized_weights = (
-                EnsembleWeighting.normalize_weights(
-                    weights,
-                    n_models=len(validated),
-                )
-            )
-
-        vote_weights: dict[Any, float] = {}
-
-        for prediction, weight in zip(
-            validated,
-            normalized_weights,
-        ):
-            vote_weights[prediction] = (
-                vote_weights.get(prediction, 0.0)
-                + weight
-            )
-
-        max_weight = max(vote_weights.values())
-
-        for prediction in validated:
-            if (
-                math.isclose(
-                    vote_weights[prediction],
-                    max_weight,
-                    rel_tol=1e-12,
-                    abs_tol=1e-12,
-                )
-            ):
-                return prediction
-
-        raise RuntimeError(
-            "Unable to determine weighted vote."
-        )
-
-    @staticmethod
-    def vote_counts(
-        predictions: Sequence[Any],
-    ) -> dict[Any, int]:
-        """
-        Return the number of votes received by each prediction.
-
-        Dictionary order follows first appearance order.
-        """
-        validated = EnsembleVoting._validate_predictions(
-            predictions
-        )
-
-        counts: dict[Any, int] = {}
-
-        for prediction in validated:
-            counts[prediction] = (
-                counts.get(prediction, 0)
-                + 1
-            )
-
-        return counts
-
-    @staticmethod
-    def vote_shares(
-        predictions: Sequence[Any],
-    ) -> dict[Any, float]:
-        """
-        Return the fraction of total votes received by each prediction.
-        """
-        counts = EnsembleVoting.vote_counts(
-            predictions
-        )
-
-        total = sum(counts.values())
-
-        return {
-            prediction: count / total
-            for prediction, count in counts.items()
+        tied_labels = {
+            label
+            for label, count in vote_counts.items()
+            if count == max_votes
         }
 
-    @staticmethod
-    def weighted_vote_shares(
-        predictions: Sequence[Any],
-        weights: Sequence[Any] | None = None,
-    ) -> dict[Any, float]:
-        """
-        Return normalized total voting weight for each prediction.
-        """
-        validated = EnsembleVoting._validate_predictions(
-            predictions
-        )
+        for label in regime_labels:
+            if label in tied_labels:
+                return label
 
-        if weights is None:
-            normalized_weights = (
-                EnsembleWeighting.equal_weights(
-                    len(validated)
-                )
-            )
-        else:
-            normalized_weights = (
-                EnsembleWeighting.normalize_weights(
-                    weights,
-                    n_models=len(validated),
-                )
-            )
-
-        shares: dict[Any, float] = {}
-
-        for prediction, weight in zip(
-            validated,
-            normalized_weights,
-        ):
-            shares[prediction] = (
-                shares.get(prediction, 0.0)
-                + weight
-            )
-
-        return shares
+        # Defensive fallback; normally unreachable.
+        return next(iter(tied_labels))
 
     @staticmethod
-    def _validate_predictions(
-        predictions: Sequence[Any],
-    ) -> tuple[Any, ...]:
+    def _calculate_vote_probabilities(
+        vote_counts: Counter,
+        regime_labels: list[Any],
+    ) -> Dict[Any, float]:
         """
-        Validate predictions.
-
-        Predictions must be a non-empty sequence of hashable values.
-        Strings and bytes are rejected as the outer container because
-        they represent a single scalar prediction, not a collection.
+        Convert vote counts into a normalized distribution across
+        known regime labels.
         """
-        if isinstance(
-            predictions,
-            (str, bytes),
-        ) or not isinstance(
-            predictions,
-            Sequence,
-        ):
-            raise TypeError(
-                "predictions must be a sequence."
-            )
 
-        if len(predictions) == 0:
+        total_votes = sum(vote_counts.values())
+
+        if total_votes <= 0:
             raise ValueError(
-                "predictions cannot be empty."
+                "Total vote count must be positive."
             )
 
-        validated = tuple(predictions)
+        labels = list(regime_labels)
 
-        for index, prediction in enumerate(validated):
-            if prediction is None:
-                raise TypeError(
-                    f"prediction at index {index} cannot be None."
-                )
+        for label in vote_counts:
+            if label not in labels:
+                labels.append(label)
 
-            try:
-                hash(prediction)
-            except TypeError as exc:
-                raise TypeError(
-                    f"prediction at index {index} "
-                    "must be hashable."
-                ) from exc
-
-        return validated
+        return {
+            label: vote_counts.get(label, 0) / total_votes
+            for label in labels
+        }

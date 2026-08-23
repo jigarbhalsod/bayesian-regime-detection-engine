@@ -1,185 +1,83 @@
-from __future__ import annotations
-
-import math
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any, Dict, List, Optional
 
 
-@dataclass(frozen=True)
+@dataclass
 class EnsembleResult:
     """
-    Standard output contract for an ensemble prediction.
+    Standardized result produced by an ensemble strategy.
     """
 
-    prediction: Any
-    confidence: float
-    uncertainty: float
-    model_weights: Mapping[str, float] = field(
-        default_factory=dict
-    )
-    model_outputs: Mapping[str, Any] = field(
-        default_factory=dict
-    )
-    metadata: Mapping[str, Any] = field(
+    prediction: Optional[Any] = None
+
+    probabilities: Dict[Any, float] = field(default_factory=dict)
+
+    model_predictions: Dict[str, Any] = field(default_factory=dict)
+
+    model_probabilities: Dict[str, Dict[Any, float]] = field(
         default_factory=dict
     )
 
-    def __post_init__(self) -> None:
-        confidence = self._validate_probability(
-            self.confidence,
-            "confidence",
-        )
+    participating_models: List[str] = field(default_factory=list)
 
-        uncertainty = self._validate_probability(
-            self.uncertainty,
-            "uncertainty",
-        )
+    strategy: str = "base"
 
-        model_weights = self._validate_model_weights(
-            self.model_weights
-        )
+    success: bool = True
+    message: Optional[str] = None
 
-        model_outputs = self._validate_mapping(
-            self.model_outputs,
-            "model_outputs",
-        )
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
-        metadata = self._validate_mapping(
-            self.metadata,
-            "metadata",
-        )
+    def validate(self) -> None:
+        """
+        Validate the ensemble result structure.
+        """
 
-        object.__setattr__(
-            self,
-            "confidence",
-            confidence,
-        )
+        if not self.strategy or not self.strategy.strip():
+            raise ValueError(
+                "Ensemble result strategy must be a non-empty string."
+            )
 
-        object.__setattr__(
-            self,
-            "uncertainty",
-            uncertainty,
-        )
-
-        object.__setattr__(
-            self,
-            "model_weights",
-            model_weights,
-        )
-
-        object.__setattr__(
-            self,
-            "model_outputs",
-            model_outputs,
-        )
-
-        object.__setattr__(
-            self,
-            "metadata",
-            metadata,
-        )
-
-    @staticmethod
-    def _validate_probability(
-        value: Any,
-        field_name: str,
-    ) -> float:
-        if isinstance(value, bool) or not isinstance(
-            value,
-            (int, float),
+        if len(set(self.participating_models)) != len(
+            self.participating_models
         ):
-            raise TypeError(
-                f"{field_name} must be numeric."
-            )
-
-        value = float(value)
-
-        if not math.isfinite(value):
             raise ValueError(
-                f"{field_name} must be finite."
+                "participating_models must not contain duplicates."
             )
 
-        if value < 0.0 or value > 1.0:
-            raise ValueError(
-                f"{field_name} must be between 0 and 1."
-            )
-
-        return value
-
-    @staticmethod
-    def _validate_mapping(
-        value: Any,
-        field_name: str,
-    ) -> dict[str, Any]:
-        if not isinstance(value, Mapping):
-            raise TypeError(
-                f"{field_name} must be a mapping."
-            )
-
-        return dict(value)
-
-    @classmethod
-    def _validate_model_weights(
-        cls,
-        value: Any,
-    ) -> dict[str, float]:
-        if not isinstance(value, Mapping):
-            raise TypeError(
-                "model_weights must be a mapping."
-            )
-
-        validated: dict[str, float] = {}
-
-        for model_name, weight in value.items():
-            if not isinstance(model_name, str):
-                raise TypeError(
-                    "model weight names must be strings."
-                )
-
-            if not model_name.strip():
+        for label, probability in self.probabilities.items():
+            if not isinstance(probability, (int, float)):
                 raise ValueError(
-                    "model weight names cannot be empty."
+                    f"Probability for label '{label}' must be numeric."
                 )
 
-            if isinstance(weight, bool) or not isinstance(
-                weight,
-                (int, float),
-            ):
-                raise TypeError(
-                    "model weights must be numeric."
-                )
-
-            weight = float(weight)
-
-            if not math.isfinite(weight):
+            if probability < 0:
                 raise ValueError(
-                    "model weights must be finite."
+                    f"Probability for label '{label}' cannot be negative."
                 )
 
-            if weight < 0.0:
+        for model_name, probabilities in self.model_probabilities.items():
+            if not model_name or not model_name.strip():
                 raise ValueError(
-                    "model weights cannot be negative."
+                    "model_probabilities contains an invalid model name."
                 )
 
-            validated[model_name] = weight
+            for label, probability in probabilities.items():
+                if not isinstance(probability, (int, float)):
+                    raise ValueError(
+                        f"Probability for model '{model_name}', "
+                        f"label '{label}' must be numeric."
+                    )
 
-        return validated
+                if probability < 0:
+                    raise ValueError(
+                        f"Probability for model '{model_name}', "
+                        f"label '{label}' cannot be negative."
+                    )
 
-    def to_dict(self) -> dict[str, Any]:
+    @property
+    def model_count(self) -> int:
         """
-        Return the result as a plain dictionary.
+        Number of models participating in the ensemble.
         """
-        return {
-            "prediction": self.prediction,
-            "confidence": self.confidence,
-            "uncertainty": self.uncertainty,
-            "model_weights": dict(
-                self.model_weights
-            ),
-            "model_outputs": dict(
-                self.model_outputs
-            ),
-            "metadata": dict(
-                self.metadata
-            ),
-        }
+
+        return len(self.participating_models)

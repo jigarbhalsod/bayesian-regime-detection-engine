@@ -1,143 +1,66 @@
-from __future__ import annotations
-
-import math
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
-@dataclass(frozen=True)
+@dataclass
 class EnsembleConfig:
     """
-    Configuration for the model ensemble and uncertainty layer.
+    Configuration for ensemble strategies.
+
+    This configuration provides common settings shared across
+    different ensemble implementations.
     """
 
-    method: str = "weighted_average"
+    name: str = "default_ensemble"
+    strategy: str = "base"
+
+    enabled_models: Optional[List[str]] = None
+    model_weights: Dict[str, float] = field(default_factory=dict)
+
     normalize_weights: bool = True
-    min_confidence: float = 0.0
-    max_confidence: float = 1.0
-    uncertainty_floor: float = 0.0
-    uncertainty_ceiling: float = 1.0
+    allow_missing_models: bool = True
 
-    def __post_init__(self) -> None:
-        method = self._validate_method(self.method)
+    min_models: int = 1
 
-        min_confidence = self._validate_probability(
-            self.min_confidence,
-            "min_confidence",
-        )
+    metadata: Dict[str, object] = field(default_factory=dict)
 
-        max_confidence = self._validate_probability(
-            self.max_confidence,
-            "max_confidence",
-        )
+    def validate(self) -> None:
+        """
+        Validate ensemble configuration.
+        """
 
-        if min_confidence > max_confidence:
-            raise ValueError(
-                "min_confidence must be less than or equal "
-                "to max_confidence."
-            )
+        if not self.name or not self.name.strip():
+            raise ValueError("Ensemble name must be a non-empty string.")
 
-        uncertainty_floor = self._validate_probability(
-            self.uncertainty_floor,
-            "uncertainty_floor",
-        )
+        if not self.strategy or not self.strategy.strip():
+            raise ValueError("Ensemble strategy must be a non-empty string.")
 
-        uncertainty_ceiling = self._validate_probability(
-            self.uncertainty_ceiling,
-            "uncertainty_ceiling",
-        )
+        if self.min_models < 1:
+            raise ValueError("min_models must be at least 1.")
 
-        if uncertainty_floor > uncertainty_ceiling:
-            raise ValueError(
-                "uncertainty_floor must be less than or equal "
-                "to uncertainty_ceiling."
-            )
+        if self.enabled_models is not None:
+            if len(self.enabled_models) == 0:
+                raise ValueError(
+                    "enabled_models cannot be an empty list when provided."
+                )
 
-        if not isinstance(self.normalize_weights, bool):
-            raise TypeError(
-                "normalize_weights must be a boolean."
-            )
+            if len(set(self.enabled_models)) != len(self.enabled_models):
+                raise ValueError(
+                    "enabled_models must not contain duplicate model names."
+                )
 
-        object.__setattr__(
-            self,
-            "method",
-            method,
-        )
+        for model_name, weight in self.model_weights.items():
+            if not model_name or not model_name.strip():
+                raise ValueError(
+                    "Model weight keys must be non-empty model names."
+                )
 
-        object.__setattr__(
-            self,
-            "min_confidence",
-            min_confidence,
-        )
+            if not isinstance(weight, (int, float)):
+                raise ValueError(
+                    f"Weight for model '{model_name}' must be numeric."
+                )
 
-        object.__setattr__(
-            self,
-            "max_confidence",
-            max_confidence,
-        )
-
-        object.__setattr__(
-            self,
-            "uncertainty_floor",
-            uncertainty_floor,
-        )
-
-        object.__setattr__(
-            self,
-            "uncertainty_ceiling",
-            uncertainty_ceiling,
-        )
-
-    @staticmethod
-    def _validate_method(value: Any) -> str:
-        if not isinstance(value, str):
-            raise TypeError(
-                "method must be a string."
-            )
-
-        method = value.strip().lower()
-
-        if not method:
-            raise ValueError(
-                "method cannot be empty."
-            )
-
-        allowed_methods = {
-            "weighted_average",
-            "mean",
-        }
-
-        if method not in allowed_methods:
-            raise ValueError(
-                "method must be one of: "
-                "weighted_average, mean."
-            )
-
-        return method
-
-    @staticmethod
-    def _validate_probability(
-        value: Any,
-        field_name: str,
-    ) -> float:
-        if isinstance(value, bool) or not isinstance(
-            value,
-            (int, float),
-        ):
-            raise TypeError(
-                f"{field_name} must be numeric."
-            )
-
-        value = float(value)
-
-        if not math.isfinite(value):
-            raise ValueError(
-                f"{field_name} must be finite."
-            )
-
-        if value < 0.0 or value > 1.0:
-            raise ValueError(
-                f"{field_name} must be between 0 and 1."
-            )
-
-        return value
+            if weight < 0:
+                raise ValueError(
+                    f"Weight for model '{model_name}' cannot be negative."
+                )
