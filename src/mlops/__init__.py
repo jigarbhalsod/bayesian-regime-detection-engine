@@ -6,6 +6,15 @@ from .experiment import (
     ExperimentStatus,
     InMemoryExperimentTracker,
 )
+from .lifecycle import (
+    LifecycleStage,
+    ModelLifecycleManager,
+    ModelLifecycleState,
+)
+from .registry import (
+    ModelRegistry,
+    RegisteredModel,
+)
 from .reproducibility import (
     EnvironmentSnapshot,
     ReproducibilityManager,
@@ -19,6 +28,12 @@ from .versioning import (
     VersionedArtifact,
     VersionRegistry,
 )
+from .deployment import (
+    DeploymentConfig,
+    DeploymentManager,
+    DeploymentState,
+    DeploymentStatus,
+)
 
 __all__ = [
     "BaseExperimentTracker",
@@ -27,6 +42,11 @@ __all__ = [
     "ExperimentRun",
     "ExperimentStatus",
     "InMemoryExperimentTracker",
+    "LifecycleStage",
+    "ModelLifecycleManager",
+    "ModelLifecycleState",
+    "ModelRegistry",
+    "RegisteredModel",
     "EnvironmentSnapshot",
     "ReproducibilityManager",
     "ReproducibilitySnapshot",
@@ -36,4 +56,8 @@ __all__ = [
     "Version",
     "VersionedArtifact",
     "VersionRegistry",
+    "DeploymentConfig",
+    "DeploymentManager",
+    "DeploymentState",
+    "DeploymentStatus",
 ]
