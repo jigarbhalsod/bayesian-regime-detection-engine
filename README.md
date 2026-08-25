@@ -1,1504 +1,700 @@
 # Bayesian Regime Detection Engine for Equity Direction Forecasting
 
-A quantitative research and decision-support system for identifying
-market regimes in Indian equities using probabilistic, time-aware
-models.
+> A modular, uncertainty-aware financial machine learning system for identifying changing market regimes in Indian equities.
 
-> **Direction over price. Calibrated probabilities over unsupported
-> certainty. Complementary models over a single black box.**
+**Project 1A | Zetheta Algorithms Private Limited**
 
-------------------------------------------------------------------------
+---
 
 ## Overview
 
-This project addresses a practical problem in quantitative investing:
-financial markets do not operate under one stable set of conditions.
+Financial markets do not operate under a single stable environment.
 
-A model that works during a broad market expansion can behave very
-differently during a liquidity shock, a volatility spike, persistent
-foreign outflows, or a post-crisis recovery. Instead of trying to
-produce an exact price target, this project focuses on identifying the
-**current market regime**, estimating the probability of alternative
-regimes, and communicating how uncertain that assessment is.
+A model that performs well during a broad market rally may behave very differently during a volatility shock, market drawdown, transitional period, or post-crisis recovery. Instead of attempting to predict an exact future market price, this project focuses on identifying the **current market regime** and representing the result probabilistically.
 
-The engine is designed around the Indian equity-market context and
-combines market, volatility, breadth, institutional-flow, currency,
-yield, and macroeconomic information.
+The Bayesian Regime Detection Engine is designed to answer:
 
-The intended output is not an automated trading instruction. It is a
-structured input to an investment process, supporting activities such
-as:
+- What market environment is currently being observed?
+- Which regime is most likely?
+- How probable are the alternative regimes?
+- How confident is the model?
+- How uncertain is the prediction?
+- Can the result be traced back to its data, features, model, and execution context?
 
--   tactical allocation tilts,
--   cash-buffer sizing,
--   sleeve weighting,
--   market-risk assessment,
--   regime-aware backtesting and scenario analysis.
+The project is designed as a **research and decision-support system** for the Indian equity market.
 
-The project is designed with the expectations of a serious quantitative
-workflow in mind: reproducibility, point-in-time data discipline,
-calibration, validation, explainability, model diagnostics, and
-traceability.
+> **Direction over price. Probability over unsupported certainty. Complementary models over a single black box.**
 
-------------------------------------------------------------------------
+---
 
-## The Problem
+## Key Features
 
-Point forecasting is attractive because it produces a simple answer:
+- Five-state Indian equity market regime framework
+- Historical market-data ingestion and preparation
+- Modular financial feature engineering
+- Financial analysis and risk components
+- Interpretable baseline regime models
+- Bayesian neural regime classification
+- Monte Carlo Dropout-based predictive uncertainty
+- Ensemble and uncertainty architecture
+- Calibration and validation components
+- Explainability layer
+- Decision-support abstractions
+- Monitoring and model-health foundations
+- Integration and orchestration components
+- Experiment tracking and model versioning support
+- Modular architecture with dedicated test coverage
 
-> "Where will the market be?"
-
-The problem is that multi-period financial price forecasts are noisy,
-relationships are non-stationary, and a precise-looking forecast can
-imply more confidence than the evidence justifies.
-
-This project takes a different approach.
-
-Instead of asking only:
-
-``` text
-What will the NIFTY price be?
-```
-
-the system asks:
-
-``` text
-What kind of market environment are we currently in?
-
-How likely is each possible regime?
-
-Is the system confident, or are the signals ambiguous?
-
-Are the underlying models in agreement?
-
-Can the assessment be reconstructed and defended later?
-```
-
-That distinction drives the architecture of the entire repository.
-
-------------------------------------------------------------------------
+---
 
 ## Market Regimes
 
 The project uses a five-state regime taxonomy for Indian equity markets.
 
-  -----------------------------------------------------------------------
-  Regime                              Interpretation
-  ----------------------------------- -----------------------------------
-  **Risk-On**                         Broadly constructive market
-                                      conditions with positive
-                                      participation and supportive risk
-                                      appetite
+| Regime | Description |
+|---|---|
+| **RISK_ON** | Constructive market environment with positive trend, supportive participation and stronger risk appetite |
+| **LATE_CYCLE** | Mature expansion with possible signs of fatigue, narrow leadership or stretched conditions |
+| **TRANSITIONAL** | Conflicting signals or movement between broader market states |
+| **POST_SHOCK** | Stabilisation or recovery following a period of elevated market stress |
+| **RISK_OFF** | Defensive or stressed environment with deteriorating risk appetite |
 
-  **Risk-Off**                        Defensive or stressed conditions,
-                                      usually associated with drawdowns,
-                                      elevated volatility, and
-                                      deteriorating risk signals
+The objective is not simply to produce a hard label.
 
-  **Transitional**                    Conflicting evidence or a regime
-                                      boundary where no single state has
-                                      strong dominance
+A regime assessment is intended to preserve the complete probability distribution:
 
-  **Late-Cycle**                      Continued expansion with signs of
-                                      narrowing leadership, stretched
-                                      conditions, or market fatigue
-
-  **Post-Shock**                      Stabilisation and recovery
-                                      following an acute market stress
-                                      event
-  -----------------------------------------------------------------------
-
-A regime call is represented as a probability distribution rather than a
-hard label.
-
-For example:
-
-``` text
-Risk-On       0.11
-Risk-Off      0.06
-Transitional  0.29
-Late-Cycle    0.49
-Post-Shock    0.05
+```text
+RISK_ON        0.11
+LATE_CYCLE     0.49
+TRANSITIONAL   0.29
+POST_SHOCK     0.05
+RISK_OFF       0.06
 ```
 
-Here, `Late-Cycle` is the most likely state, but the probability
-assigned to `Transitional` remains important. The system should not hide
-that ambiguity by pretending the classification is certain.
+In this example, `LATE_CYCLE` is the dominant regime, but the probability assigned to `TRANSITIONAL` remains relevant. The system is designed to preserve that ambiguity rather than hiding it behind a single overconfident classification.
 
-------------------------------------------------------------------------
+---
 
-## What the System Produces
+# System Architecture
 
-At the decision-support boundary, the system is expected to produce a
-standardised regime assessment containing information such as:
+The project follows a modular end-to-end architecture:
 
-``` text
-Regime probability distribution
-        +
-Dominant regime
-        +
-Prediction confidence / uncertainty
-        +
-Conformal prediction set
-        +
-Model agreement or disagreement
-        +
-Model-health indicators
-        +
-Relevant diagnostics and lineage
+```text
+                         Market Data
+                NIFTY • VIX • Macro • Flows
+                              |
+                              v
+                         Data Layer
+                Ingestion • Quality • Preparation
+                              |
+                              v
+                    Feature Engineering
+             Returns • Momentum • Volatility • Macro
+                              |
+                              v
+                    Financial Analysis
+                Risk • Drawdown • Performance
+                              |
+                              v
+                      Regime Model Layer
+          Baselines • Bayesian • Neural • HMM • Sequential
+                              |
+                              v
+                   Ensemble & Uncertainty
+                         Calibration
+                              |
+                              v
+                 Validation & Explainability
+                              |
+                              v
+                  Decision Support + Health
+                              |
+                              v
+                Monitoring • MLOps • Deployment
 ```
 
-A representative output contract looks like:
+---
 
-``` json
-{
-  "as_of_date": "YYYY-MM-DD",
-  "dominant_regime": "Late-Cycle",
-  "regime_probabilities": {
-    "Risk-On": 0.11,
-    "Risk-Off": 0.06,
-    "Transitional": 0.29,
-    "Late-Cycle": 0.49,
-    "Post-Shock": 0.05
-  },
-  "prediction_set": [
-    "Late-Cycle",
-    "Transitional"
-  ],
-  "model_health": "healthy"
-}
+# Current Implementation
+
+The repository has been developed incrementally across a broader **15-phase project roadmap**, covering:
+
+1. Business & BFSI Understanding
+2. Research & Literature
+3. Solution Architecture
+4. Data Layer
+5. Data Engineering
+6. Feature Engineering
+7. Financial Analysis
+8. Baseline Regime Engine
+9. Advanced Models
+10. Ensemble & Uncertainty
+11. Validation
+12. Decision Support
+13. Deployment
+14. Documentation
+15. Final Integration & Review
+
+The repository includes modules and architectural foundations across data processing, feature generation, analysis, modelling, ensemble logic, uncertainty estimation, explainability, validation, monitoring, integration, and MLOps.
+
+---
+
+# Bayesian Regime Model
+
+One concrete model path implemented in the project uses a Bayesian-style neural classification workflow built around:
+
+- PyTorch
+- Bayesian regime network architecture
+- Dropout
+- Monte Carlo Dropout inference
+- Predictive probability estimation
+- Confidence estimation
+- Predictive uncertainty estimation
+
+Conceptually:
+
+```text
+Market Features
+      |
+      v
+Bayesian Regime Network
+      |
+      v
+Multiple Stochastic Forward Passes
+(Monte Carlo Dropout)
+      |
+      v
+Regime Probability Distribution
+      |
+      +-- Dominant Regime
+      +-- Confidence
+      +-- Predictive Uncertainty
 ```
 
-The exact fields depend on the final implementation, but the principle
-is fixed: **the final result must preserve probability, uncertainty, and
-traceability rather than collapsing everything into one unsupported
-label**.
+Monte Carlo Dropout keeps dropout active during repeated inference passes, allowing the model to generate a distribution of predictions rather than relying on one deterministic forward pass.
 
-------------------------------------------------------------------------
+---
 
-# Project Scope
+# Historical Training Workflow
 
-The project covers the full path from business understanding to final
-delivery.
+A historical training workflow has been added to move beyond the original synthetic demonstration.
 
-``` text
-Business Context
-      ↓
-Research
-      ↓
-Architecture
-      ↓
-Data Foundation
-      ↓
-Data Engineering
-      ↓
+The current implementation downloads historical:
+
+- **NIFTY 50**
+- **India VIX**
+
+and constructs a model-ready dataset.
+
+```text
+Historical NIFTY 50
+        +
+Historical India VIX
+        |
+        v
+    Data Alignment
+        |
+        v
 Feature Engineering
-      ↓
-Financial Analysis
-      ↓
-Baseline Regime Modelling
-      ↓
-Advanced Regime Models
-      ↓
-Ensemble + Uncertainty
-      ↓
-Validation
-      ↓
-Decision Support
-      ↓
-Deployment
-      ↓
-Documentation
-      ↓
-Final Review
+        |
+        v
+Remove Missing / Non-Finite Values
+        |
+        v
+Rule-Based Regime Labelling
+        |
+        v
+Feature Standardization
+        |
+        v
+Bayesian Regime Model Training
+        |
+        v
+Save Model + Metadata
 ```
 
-The implementation is organised into 15 phases so that advanced
-modelling is built on a validated foundation rather than being
-introduced prematurely.
+### Latest verified training run
 
-------------------------------------------------------------------------
-
-# Project Phases
-
-## Phase 1 --- Business & BFSI Understanding
-
-The first phase establishes the business context.
-
-The project is framed around a quantitative investment workflow in an
-Indian asset-management environment. The key objective is to understand
-what decision the regime engine supports, who consumes the output, and
-where the system must stop.
-
-Key areas include:
-
--   Indian mutual-fund and asset-management context
--   Indian equity-market structure
--   user and stakeholder requirements
--   regime definitions
--   tactical allocation use cases
--   cash-buffer and sleeve-weighting context
--   governance and regulatory expectations
--   product boundaries and success criteria
-
-**Output:** a clear product definition and decision workflow.
-
-------------------------------------------------------------------------
-
-## Phase 2 --- Research & Literature
-
-Before selecting implementation approaches, the project studies the
-relevant modelling and validation techniques.
-
-Research areas include:
-
--   Hidden Markov Models
--   Bayesian inference
--   Bayesian Hidden Markov Models
--   regime-switching models
--   multivariate regime-switching VAR
--   Bayesian neural approaches
--   MC dropout and predictive uncertainty
--   time-series foundation models
--   sequential Monte Carlo / particle filtering
--   Bayesian Online Changepoint Detection
--   model ensembling
--   WAIC and LOO-based Bayesian comparison
--   calibration
--   conformal prediction
--   robust financial backtesting
-
-**Output:** research-backed modelling choices and documented
-assumptions.
-
-------------------------------------------------------------------------
-
-## Phase 3 --- Solution Architecture
-
-The architecture separates concerns so that changes in one part of the
-system do not require rewriting the entire project.
-
-The high-level design is:
-
-``` text
-Data Sources
-    ↓
-Ingestion and Point-in-Time Storage
-    ↓
-Data Quality and Validation
-    ↓
-Feature Engineering
-    ↓
-Financial Analysis
-    ↓
-Regime Models
-    ↓
-Model Ensemble
-    ↓
-Uncertainty and Calibration
-    ↓
-Model Health
-    ↓
-Decision Support
-    ↓
-API / Reports / Deployment
+```text
+Historical observations: 4071
+Valid training samples : 3295
+Input features         : 8
+Number of regimes      : 5
+Latest training date   : 2026-08-25
 ```
 
-Important architectural principles:
+The trained checkpoint is saved at:
 
--   preserve point-in-time correctness,
--   keep research and production concerns separate,
--   make model families replaceable,
--   standardise model outputs,
--   retain model and data lineage,
--   support both batch processing and online inference where required.
-
-------------------------------------------------------------------------
-
-## Phase 4 --- Data Layer
-
-This phase defines what data enters the system and how it is
-represented.
-
-Typical inputs include:
-
--   NIFTY 50
--   NIFTY Midcap 100
--   NIFTY Smallcap 100
--   India VIX
--   FII/DII flows
--   SIP data
--   USD/INR
--   government-security yields
--   credit-spread information
--   selected macroeconomic indicators
--   market breadth and related market-structure data
-
-The data layer is responsible for more than loading files. It
-establishes:
-
--   dataset definitions,
--   schemas,
--   source metadata,
--   timestamps,
--   provenance,
--   point-in-time handling,
--   validation expectations,
--   storage boundaries.
-
-------------------------------------------------------------------------
-
-## Phase 5 --- Data Engineering
-
-The data-engineering layer turns source data into reliable inputs for
-downstream analysis.
-
-The pipeline follows the general flow:
-
-``` text
-Source
-  ↓
-Ingestion
-  ↓
-Raw Storage
-  ↓
-Loading / Parsing
-  ↓
-Standardisation
-  ↓
-Cleaning
-  ↓
-Quality Validation
-  ↓
-Transformation
-  ↓
-Preparation
-  ↓
-Integration
-  ↓
-Model-Ready Dataset
+```text
+artifacts/live_regime_model.pt
 ```
 
-Important controls include:
+---
 
--   missing-value handling,
--   duplicate detection,
--   timestamp validation,
--   chronological ordering,
--   unsupported-data detection,
--   range and consistency checks,
--   explicit failure behaviour.
+# Current Model Features
 
-The goal is to ensure that downstream models do not silently operate on
-invalid data.
+The current historical Bayesian training workflow uses eight features:
 
-------------------------------------------------------------------------
+| # | Feature | Description |
+|---|---|---|
+| 1 | `short_return` | Short-term market return |
+| 2 | `medium_return` | Medium-term market return |
+| 3 | `momentum` | Intermediate market momentum |
+| 4 | `volatility` | Rolling return volatility |
+| 5 | `volume_change` | Change in trading volume |
+| 6 | `rsi` | Relative Strength Index |
+| 7 | `vix_risk` | Change in India VIX risk signal |
+| 8 | `trend_strength` | Distance from the rolling market trend |
 
-## Phase 6 --- Feature Engineering
+Before training:
 
-Raw prices alone do not provide enough context for regime detection.
+1. Missing values are removed.
+2. Infinite and non-finite values are removed.
+3. Features are standardized.
+4. Normalization statistics are stored with the checkpoint.
 
-The feature layer converts validated observations into economically
-meaningful variables.
+This ensures that future inference can apply the same feature transformation used during training.
 
-Feature groups include:
+---
 
-``` text
-Returns
-Price and trend
-Momentum
-Volatility
-Volume
-Calendar
-Technical indicators
-Cross-asset relationships
-Macro indicators
-Market breadth
-Capital flows
+# Regime Distribution in Latest Training Run
+
+The latest verified training run produced the following class distribution:
+
+```text
+RISK_ON        : 620
+LATE_CYCLE     : 824
+TRANSITIONAL   : 1427
+POST_SHOCK     : 147
+RISK_OFF       : 277
 ```
 
-The wider project design also considers specialised features such as:
+These labels are currently generated through transparent rule-based logic using combinations of market trend, momentum, RSI, volatility, and VIX behaviour.
 
--   relative large/mid/small-cap behaviour,
--   FII/DII z-scores,
--   SIP momentum,
--   flow-balance measures,
--   real-rate proxies,
--   currency-stress measures,
--   rolling correlation structure,
--   topological features,
--   sector-relationship embeddings.
+They should therefore be interpreted as **supervised modelling targets based on explicit assumptions**, not as an objectively observable ground truth.
 
-Feature engineering follows the same discipline as the rest of the
-project: a feature should have a documented definition and a defensible
-reason for inclusion.
-
-------------------------------------------------------------------------
-
-## Phase 7 --- Financial Analysis
-
-The purpose of this phase is to understand the behaviour represented by
-the engineered features before treating them as model inputs.
-
-Analysis includes relationships between:
-
--   returns and volatility,
--   market breadth and index direction,
--   large-, mid-, and small-cap performance,
--   institutional flows,
--   currency conditions,
--   yields and rates,
--   macroeconomic conditions,
--   correlation and market structure.
-
-This phase provides the financial context needed to interpret later
-model outputs.
-
-------------------------------------------------------------------------
-
-## Phase 8 --- Baseline Regime Engine
-
-The project starts modelling with a simpler baseline before moving to
-more computationally expensive approaches.
-
-The baseline includes a frequentist Hidden Markov Model and supporting
-regime analysis.
-
-The typical workflow is:
-
-``` text
-Validated Features
-      ↓
-Chronological Training
-      ↓
-HMM Training
-      ↓
-State Probabilities
-      ↓
-State Interpretation
-      ↓
-Regime Labelling
-      ↓
-Transition and Duration Analysis
-      ↓
-Evaluation
-```
-
-The baseline examines:
-
--   regime probability paths,
--   state persistence,
--   transition matrices,
--   regime duration,
--   stickiness,
--   comparison across candidate state counts.
-
-The five target states are interpreted post hoc in terms of the project
-taxonomy rather than assuming that a latent-state model automatically
-knows business labels.
-
-------------------------------------------------------------------------
-
-## Phase 9 --- Advanced Models
-
-The advanced modelling phase evaluates complementary model families.
-
-The intended model stack includes:
-
-### Bayesian HMM
-
-Extends latent-state modelling with posterior uncertainty and transition
-uncertainty.
-
-### Regime-Switching VAR
-
-Captures multivariate relationships across variables such as:
-
--   returns,
--   volatility,
--   breadth,
--   capital flows,
--   INR,
--   yields.
-
-### Bayesian Neural Approaches
-
-Used to capture nonlinear relationships while estimating predictive
-uncertainty through approaches such as:
-
--   MC dropout,
--   variational methods,
--   deep ensembles.
-
-### Time-Series Foundation Models
-
-Foundation models are evaluated as temporal representation or
-forecasting components rather than assumed to be native regime
-classifiers.
-
-The project scope includes Chronos and comparison with at least one
-additional model from the approved foundation-model family, such as
-TimesFM, Lag-Llama, or Moirai.
-
-A practical hybrid pattern is:
-
-``` text
-Market Feature Window
-        ↓
-Foundation Model Representation
-        ↓
-Bayesian / Probabilistic Classification Head
-        ↓
-Regime Probabilities + Uncertainty
-```
-
-### Sequential Inference
-
-Particle filtering supports sequential state tracking, while Bayesian
-Online Changepoint Detection helps identify discontinuities that smooth
-regime models may react to slowly.
-
-------------------------------------------------------------------------
-
-## Phase 10 --- Ensemble & Uncertainty
-
-No individual model is assumed to be universally correct.
-
-Different models can capture different properties of the market, so
-their outputs are combined through a documented ensemble layer.
-
-``` text
-HMM ───────────────┐
-Bayesian HMM ──────┤
-RS-VAR ────────────┤
-Neural Model ──────┼──→ Ensemble
-Foundation Model ──┤
-Sequential Signals ─┘
-                   ↓
-          Combined Regime Distribution
-```
-
-The project evaluates approaches such as:
-
--   Bayesian Model Averaging,
--   constrained stacking,
--   Bayesian model comparison using WAIC / LOO,
--   out-of-sample probability performance.
-
-The ensemble must preserve the evidence needed to understand:
-
--   which models contributed,
--   how strongly they contributed,
--   whether models agree,
--   whether disagreement is itself increasing uncertainty.
-
-### Calibration and Conformal Prediction
-
-A model that outputs `0.75` should be evaluated on whether predictions
-made at approximately that confidence level are empirically reliable.
-
-The uncertainty layer therefore includes:
-
--   probability calibration,
--   reliability analysis,
--   expected calibration error,
--   proper probabilistic scoring,
--   conformal prediction,
--   prediction-set coverage monitoring.
-
-The objective is not to manufacture certainty. When the evidence is
-ambiguous, the output should be allowed to remain ambiguous.
-
-------------------------------------------------------------------------
-
-## Phase 11 --- Validation
-
-Financial time series cannot be validated like ordinary IID datasets.
-
-Random splitting can leak information across time and produce misleading
-performance.
-
-The validation strategy therefore focuses on:
-
--   chronological splits,
--   walk-forward evaluation,
--   purging where required,
--   embargoing where required,
--   leakage prevention,
--   out-of-sample testing,
--   stress-period analysis,
--   sub-period analysis,
--   calibration testing,
--   proper scoring rules.
-
-Important measures include, where applicable:
-
--   log loss,
--   Brier score,
--   Ranked Probability Score,
--   calibration diagnostics,
--   transition stability,
--   regime-duration behaviour,
--   stress-period performance,
--   model comparison,
--   ensemble performance.
-
-The project also validates whether the ensemble genuinely improves on
-its components rather than assuming that combining models automatically
-creates a better result.
-
-------------------------------------------------------------------------
-
-## Phase 12 --- Decision Support Layer
-
-A regime probability becomes useful only when it can inform a decision.
-
-The decision-support workflow is:
-
-``` text
-Observe Market
-      ↓
-Generate Features
-      ↓
-Run Regime Models
-      ↓
-Combine Predictions
-      ↓
-Quantify Uncertainty
-      ↓
-Calibrate
-      ↓
-Check Model Health
-      ↓
-Explain
-      ↓
-Human Review
-      ↓
-Apply Portfolio Constraints
-      ↓
-Decision
-      ↓
-Monitor and Update
-```
-
-The intended use cases include:
-
--   tactical allocation tilts,
--   cash-buffer sizing,
--   sleeve weighting,
--   regime-aware risk assessment,
--   scenario analysis,
--   Investment Committee communication.
-
-The final investment decision remains with the responsible human
-process.
-
-------------------------------------------------------------------------
-
-## Phase 13 --- Deployment
-
-Deployment packages the validated components for repeatable use.
-
-The deployment boundary covers:
-
--   inference packaging,
--   configuration,
--   API exposure where implemented,
--   logging,
--   model metadata,
--   data/model version tracking,
--   operational checks,
--   online/batch reconciliation.
-
-The objective is not merely to make the code executable. A
-production-facing regime call should be traceable to the relevant model
-version, input snapshot, and configuration.
-
-------------------------------------------------------------------------
-
-## Phase 14 --- Documentation
-
-Documentation is treated as part of the engineering work.
-
-The project documentation covers:
-
--   product requirements,
--   architecture,
--   phase definitions,
--   modelling assumptions,
--   data definitions,
--   feature definitions,
--   validation methodology,
--   model cards,
--   calibration evidence,
--   known limitations,
--   operational and governance context.
-
-A complex quantitative model is difficult to trust if nobody can explain
-how it was built, evaluated, or reproduced.
-
-------------------------------------------------------------------------
-
-## Phase 15 --- Finalization
-
-The final phase focuses on integration and delivery.
-
-Typical checks include:
-
-``` text
-End-to-end execution
-Integration testing
-Validation review
-Documentation consistency
-Code cleanup
-Reproducibility checks
-Results review
-Demonstration readiness
-Final deliverables
-```
-
-Completion means that implementation, tests, results, and documentation
-tell the same story.
-
-------------------------------------------------------------------------
+---
 
 # Repository Structure
 
-The repository is organised by responsibility rather than by a single
-monolithic script.
+The project is organised by responsibility to keep individual concerns modular and testable.
 
-``` text
+```text
 bayesian-regime-detection-engine/
-│
-├── configs/
-├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── prepared/
-│
-├── docs/
-│   ├── research/
-│   ├── decisions/
-│   ├── models/
-│   └── reports/
-│
-├── notebooks/
-│   ├── exploration/
-│   ├── analysis/
-│   └── experiments/
-│
-├── reports/
-│
-├── src/
-│   ├── data/
-│   ├── features/
-│   ├── financial_analysis/
-│   ├── models/
-│   │   ├── baseline/
-│   │   ├── hmm/
-│   │   ├── bayesian_hmm/
-│   │   ├── rs_var/
-│   │   ├── neural/
-│   │   ├── foundation/
-│   │   ├── smc/
-│   │   └── changepoint/
-│   ├── ensemble/
-│   ├── uncertainty/
-│   ├── validation/
-│   ├── decision_support/
-│   ├── monitoring/
-│   ├── api/
-│   └── utils/
-│
-├── tests/
-│
-├── README.md
-├── requirements.txt
-└── pyproject.toml
+|
++-- artifacts/                  # Saved model artifacts
+|   +-- live_regime_model.pt
+|
++-- configs/                    # Configuration files
+|
++-- data/                       # Data storage and processing layers
+|
++-- docs/                       # Research, architecture and documentation
+|
++-- notebooks/                  # Exploration and experiments
+|
++-- reports/                    # Generated analysis and reporting artifacts
+|
++-- scripts/
+|   +-- run_regime_demo.py
+|   +-- train_live_regime_model.py
+|
++-- src/
+|   +-- analysis/               # Financial analysis
+|   +-- data/                   # Data ingestion and preparation
+|   +-- features/               # Feature engineering
+|   +-- models/                 # Baseline and advanced models
+|   |   +-- bayesian/           # Bayesian regime model
+|   +-- ensemble/               # Model combination
+|   +-- uncertainty/            # Confidence and uncertainty
+|   +-- explainability/         # Model interpretation
+|   +-- validation/             # Validation and diagnostics
+|   +-- decision_support/       # Decision-support layer
+|   +-- monitoring/             # Data/model monitoring
+|   +-- integration/            # Pipeline integration
+|   +-- mlops/                  # Versioning and experiment support
+|
++-- tests/                      # Automated tests
+|
++-- README.md
++-- requirements.txt
++-- pyproject.toml
 ```
 
-The exact file layout can evolve, but the design principle should remain
-the same: **data handling, feature generation, financial analysis,
-modelling, validation, and deployment should remain independently
-understandable and testable**.
-
-------------------------------------------------------------------------
+---
 
 # Technology Stack
 
-The project is primarily Python-based.
+### Core
 
-Core tools used across the project include:
+- Python
+- NumPy
+- Pandas
+- PyTorch
+- yfinance
+- pytest
 
-``` text
-Python
-NumPy
-Pandas
-SciPy
-scikit-learn
-pytest
-```
+### Broader Architecture / Research Components
 
-Modelling and statistical components may include:
+Depending on the module and experiment, the project architecture also considers or supports tools and approaches involving:
 
-``` text
-hmmlearn
-statsmodels
-PyMC
-NumPyro
-ArviZ
-```
+- scikit-learn
+- SciPy
+- statsmodels
+- hmmlearn
+- PyMC / NumPyro
+- ArviZ
+- TensorFlow Probability
+- sequential inference
+- changepoint detection
+- conformal prediction
+- model explainability
 
-Deep-learning and probabilistic components may include:
+Not every package is required to execute the current historical Bayesian training workflow.
 
-``` text
-PyTorch
-TensorFlow
-TensorFlow Probability
-```
+---
 
-Specialised components may include:
-
-``` text
-Chronos
-TimesFM / Lag-Llama / Moirai
-SHAP
-MAPIE / CREPES
-FilterPy
-ruptures
-TDA libraries
-```
-
-The project also includes cross-language validation requirements in its
-broader deliverables, with selected regime and calibration checks
-implemented or reconciled against R tooling.
-
-------------------------------------------------------------------------
-
-# Getting Started
-
-## Prerequisites
-
-Use the Python version specified by the repository configuration.
-
-Before installing dependencies, check the project files:
-
-``` bash
-python --version
-```
-
-``` bash
-pip --version
-```
-
-If `pyproject.toml` or other environment files specify a Python version,
-use that version rather than assuming a generic runtime.
-
-------------------------------------------------------------------------
+# Installation
 
 ## 1. Clone the Repository
 
-``` bash
+```bash
 git clone <repository-url>
 cd bayesian-regime-detection-engine
 ```
 
-------------------------------------------------------------------------
-
 ## 2. Create a Virtual Environment
 
-### Windows
+### Windows PowerShell
 
-``` powershell
-python -m venv venv
-venv\Scripts\activate
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-### Linux / macOS
+## 3. Install Dependencies
 
-``` bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-------------------------------------------------------------------------
-
-## 3. Upgrade pip
-
-``` bash
+```powershell
 python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-------------------------------------------------------------------------
+If the project is configured for editable installation:
 
-## 4. Install Dependencies
-
-If the repository uses `requirements.txt`:
-
-``` bash
-pip install -r requirements.txt
+```powershell
+python -m pip install -e .
 ```
 
-If the repository is configured as a Python package through
-`pyproject.toml`, install it using the package workflow defined there.
+---
 
-For example:
+# Verify the Environment
 
-``` bash
-pip install -e .
+Check the primary packages used by the current historical workflow:
+
+```powershell
+python -c "import yfinance, pandas, numpy, torch; print('All required packages are installed')"
 ```
 
-Do not install dependencies from memory or from this README if the
-repository configuration defines a different source of truth.
+Expected output:
 
-------------------------------------------------------------------------
-
-## 5. Verify the Environment
-
-``` bash
-python --version
+```text
+All required packages are installed
 ```
 
-``` bash
-python -m pytest --version
+---
+
+# How to Run
+
+## 1. Bayesian Synthetic Demo
+
+The original reproducible demonstration trains the Bayesian model on synthetic regime data and evaluates a fixed demonstration observation.
+
+```powershell
+python scripts\run_regime_demo.py
 ```
 
-Then run the available test suite:
+Workflow:
 
-``` bash
+```text
+Synthetic Market Data
+        |
+        v
+Bayesian Model Training
+        |
+        v
+Fixed Market Observation
+        |
+        v
+Monte Carlo Dropout Inference
+        |
+        v
+Regime Probabilities + Confidence
+```
+
+Because the script uses reproducible data generation and a fixed observation, repeated runs can produce the same output.
+
+This is expected behaviour.
+
+---
+
+## 2. Historical Model Training
+
+Train the Bayesian regime model using historical NIFTY 50 and India VIX data:
+
+```powershell
+python scripts\train_live_regime_model.py
+```
+
+A successful run:
+
+```text
+Downloads historical data
+        |
+        v
+Builds market features
+        |
+        v
+Cleans invalid observations
+        |
+        v
+Creates regime labels
+        |
+        v
+Normalizes features
+        |
+        v
+Trains Bayesian model
+        |
+        v
+Saves checkpoint
+```
+
+Expected final output includes:
+
+```text
+Training complete.
+
+Model saved successfully:
+artifacts\live_regime_model.pt
+```
+
+---
+
+# Testing
+
+The project includes automated tests across major modules and development phases.
+
+Run the complete test suite:
+
+```powershell
 python -m pytest -v
-```
-
-------------------------------------------------------------------------
-
-# How to Run the Project
-
-This repository should be run in layers.
-
-Do not treat the project as a single opaque command unless a dedicated
-orchestration entry point has been implemented.
-
-The normal engineering workflow is:
-
-``` text
-1. Configure the environment
-        ↓
-2. Validate source data
-        ↓
-3. Run ingestion and preparation
-        ↓
-4. Generate features
-        ↓
-5. Run financial analysis
-        ↓
-6. Train / evaluate baseline models
-        ↓
-7. Run advanced models
-        ↓
-8. Combine model outputs
-        ↓
-9. Evaluate uncertainty and calibration
-        ↓
-10. Validate the complete pipeline
-        ↓
-11. Generate decision-support output
-        ↓
-12. Run the deployment interface
-```
-
-This sequence is deliberate. If something fails, the layer where it
-failed should be identifiable.
-
-------------------------------------------------------------------------
-
-# Running Tests
-
-The project uses `pytest`.
-
-Run the complete suite:
-
-``` bash
-python -m pytest -v
-```
-
-Run all tests under the test directory:
-
-``` bash
-python -m pytest tests -v
 ```
 
 Run a specific test file:
 
-``` bash
-python -m pytest tests/<test_file>.py -v
+```powershell
+python -m pytest tests\<test_file>.py -v
 ```
 
-Run a phase-specific group:
+Representative verified milestones include:
 
-``` bash
-python -m pytest tests/test_phase6_*.py -v
-```
+- **Phase 5 – Data Engineering:** 19 tests passed
+- **Phase 8 – Baseline Regime Engine:** 106 tests passed
+- Dedicated module and integration testing across subsequent architectural components
 
-For the implemented phase suites, use the exact test naming convention
-present in the repository.
+The project was developed incrementally so that module-level correctness and interface compatibility could be checked throughout implementation.
 
-For example, Phase 5 validation is grouped by pipeline responsibility:
+---
 
-``` powershell
-python -m pytest `
-  tests/test_phase5_group_a_ingestion.py `
-  tests/test_phase5_group_b_loading.py `
-  tests/test_phase5_group_c_preparation.py `
-  tests/test_phase5_group_d_integration.py `
-  tests/test_phase5_group_e_final_validation.py `
-  -v
-```
+# Validation Philosophy
 
-On a shell that does not support PowerShell line continuation, place the
-command on one line.
+Regime detection is different from conventional supervised classification because market regimes are not directly observable in the same way as ordinary class labels.
 
-------------------------------------------------------------------------
+The project therefore considers multiple forms of evaluation, including:
 
-# Recommended Development Workflow
+- chronological validation,
+- walk-forward evaluation,
+- leakage prevention,
+- regime stability,
+- probability quality,
+- calibration,
+- stress-period behaviour,
+- model robustness,
+- model agreement and disagreement,
+- operational health.
 
-For local development, the recommended approach is:
+Accuracy alone is not sufficient for a probabilistic financial regime model.
 
-### Step 1 --- Start with tests
+---
 
-Before changing a module:
+# Explainability and Decision Support
 
-``` bash
-python -m pytest tests/<relevant_test>.py -v
-```
+The system architecture separates:
 
-### Step 2 --- Make a focused change
-
-Keep changes scoped to one concern:
-
-``` text
-data
-features
-financial analysis
-model
-ensemble
-validation
-deployment
-```
-
-### Step 3 --- Run the affected tests
-
-``` bash
-python -m pytest tests/<relevant_test>.py -v
-```
-
-### Step 4 --- Run the broader phase suite
-
-``` bash
-python -m pytest tests/test_phase<phase>_*.py -v
-```
-
-### Step 5 --- Commit the verified increment
-
-``` bash
-git status
-git add .
-git commit -m "phase-x: describe verified change"
-git push
-```
-
-This is preferable to making a large number of unrelated changes and
-debugging everything at the end.
-
-------------------------------------------------------------------------
-
-# Data Pipeline
-
-The expected pipeline is:
-
-``` text
-Dataset Registry
-      ↓
-Ingestion
-      ↓
-Raw Data
-      ↓
-Load / Parse
-      ↓
-Clean / Standardise
-      ↓
-Validate
-      ↓
-Transform
-      ↓
-Prepare
-      ↓
-Integrate
-      ↓
-Feature-Ready Dataset
-```
-
-The data layer should preserve the distinction between:
-
-``` text
-Raw data
-    ≠
-Processed data
-    ≠
-Prepared / model-ready data
-```
-
-This separation makes debugging and lineage significantly easier.
-
-A historical model evaluation must use the information that would
-actually have been available at that point in time. That is a hard
-requirement, not a formatting preference.
-
-------------------------------------------------------------------------
-
-# Feature Pipeline
-
-Feature generation starts from validated and prepared data.
-
-``` text
-Prepared Data
-      ↓
-Feature Generation
-      ↓
-Feature Validation
-      ↓
-Feature Dataset
-      ↓
-Analysis / Modelling
-```
-
-Feature groups should be individually testable where practical.
-
-Examples:
-
-``` text
-Returns
-Price
-Momentum
-Volatility
-Volume
-Calendar
-Technical
-Cross-Asset
-Macro
-```
-
-Regime-specific extensions can then be added without tightly coupling
-them to ingestion or model code.
-
-------------------------------------------------------------------------
-
-# Modelling Workflow
-
-The modelling workflow follows a progression from simple to complex.
-
-``` text
-Validated Features
-        ↓
-Baseline HMM
-        ↓
-Evaluate and Interpret
-        ↓
-Bayesian / Multivariate Models
-        ↓
-Neural Models
-        ↓
-Foundation Model Components
-        ↓
-Sequential Inference
-        ↓
-Out-of-Sample Comparison
-```
-
-Advanced models are not accepted merely because they are more
-sophisticated.
-
-Each model must justify its place through evidence such as:
-
--   probabilistic performance,
--   calibration,
--   robustness,
--   stability,
--   complementary behaviour,
--   usefulness to the ensemble.
-
-------------------------------------------------------------------------
-
-# Ensemble Workflow
-
-Model outputs should be standardised before combination.
-
-Conceptually:
-
-``` text
+```text
 Model Output
-├── probabilities
-├── uncertainty
-├── diagnostics
-├── model version
-└── inference metadata
-```
-
-The ensemble receives these outputs and produces:
-
-``` text
-Combined probabilities
-Model contribution / weights
-Model disagreement
-Ensemble diagnostics
-```
-
-The final combined output is then passed to uncertainty, calibration,
-and decision-support components.
-
-------------------------------------------------------------------------
-
-# Validation Principles
-
-The following rules are non-negotiable for the project.
-
-## No Random Train/Test Splits for Time-Series Evaluation
-
-Financial observations are temporally dependent.
-
-Use chronological and walk-forward evaluation where appropriate.
-
-## No Look-Ahead Bias
-
-Historical predictions must not use future information, including data
-revisions that were unavailable at the time.
-
-## Calibration Matters
-
-A probability forecast is not useful simply because it is numerically
-high or low. It must be evaluated against realised outcomes.
-
-## Accuracy Alone Is Not Enough
-
-Regime models should be assessed using proper probabilistic metrics and
-calibration diagnostics.
-
-## Stress Periods Matter
-
-The model should be inspected across materially different market
-conditions rather than evaluated only on average performance.
-
-## Ensemble Improvement Must Be Demonstrated
-
-The ensemble should not be assumed to outperform its components. That
-claim must be tested.
-
-------------------------------------------------------------------------
-
-# Decision-Support Boundary
-
-The engine is a **decision-support system**.
-
-Its intended path is:
-
-``` text
-Market Evidence
-      ↓
-Regime Assessment
-      ↓
+     |
+     v
 Probability Distribution
-      ↓
-Uncertainty
-      ↓
-Calibration
-      ↓
-Model Health
-      ↓
-Explanation
-      ↓
+     |
+     v
+Uncertainty Assessment
+     |
+     v
+Validation / Model Health
+     |
+     v
+Explainability
+     |
+     v
 Human Review
-      ↓
+     |
+     v
 Decision Within Constraints
 ```
 
-It is explicitly not:
+The project does **not** treat a model prediction as an automatic trading instruction.
 
-``` text
-Prediction
-   ↓
-Automatic Trade
-```
+Instead, the intended decision-support output can include:
 
-The output can support a portfolio or investment process, but it does
-not remove the need for professional judgement, portfolio constraints,
-risk controls, or governance.
+- current regime assessment,
+- complete regime probability distribution,
+- confidence,
+- uncertainty,
+- model-health status,
+- explanatory drivers,
+- changes from previous assessments,
+- potential decision context.
 
-------------------------------------------------------------------------
+This preserves the distinction between **analytical evidence** and the **final investment decision**.
 
-# Model Health and Traceability
+---
 
-A regime probability should not be considered sufficient on its own.
+# Monitoring and MLOps
 
-The broader system should be able to answer:
+The architecture includes components for making the project reproducible and operationally traceable.
 
-``` text
-Which data snapshot was used?
+These areas include:
 
-Which model version generated the result?
+- experiment tracking,
+- model versioning,
+- version registry support,
+- deployment state,
+- lifecycle management,
+- data quality monitoring,
+- drift detection,
+- performance monitoring,
+- degradation detection,
+- integration and orchestration.
 
-Which configuration was active?
+The goal is that a historical regime assessment can eventually be traced back to the relevant model and execution context.
 
-Were there data-quality issues?
+---
 
-Did the models agree?
+# Development Principles
 
-Was a changepoint detected?
+The project follows several engineering principles.
 
-Is the current observation outside the expected training distribution?
+### Modular by Design
 
-How different is online inference from batch inference?
+Individual responsibilities are separated across data, features, analysis, modelling, validation and deployment layers.
 
-Can the historical call be reconstructed?
-```
+### Time-Aware
 
-If these questions cannot be answered, the output may still be
-mathematically generated, but it is not yet operationally defensible.
+Financial time-series operations should respect chronological ordering and avoid look-ahead bias.
 
-------------------------------------------------------------------------
+### Probability-Aware
 
-# Expected Final Deliverables
+The output should preserve alternative regime probabilities rather than only returning a hard label.
 
-The wider project brief includes deliverables beyond the core Python
-implementation.
+### Uncertainty-Aware
 
-These include:
+Confidence is not treated as certainty. Predictive uncertainty is an explicit part of the modelling architecture.
 
-1.  **Main Report**
-    -   theory,
-    -   methodology,
-    -   results,
-    -   case studies,
-    -   calibration evidence,
-    -   ensemble design,
-    -   regime comparison and validation.
-2.  **Python Codebase**
-    -   data and feature engineering,
-    -   regime models,
-    -   uncertainty and calibration,
-    -   sequential inference,
-    -   ensemble logic,
-    -   simulation components.
-3.  **R Codebase / Cross-Language Validation**
-    -   selected HMM and Markov-switching implementations,
-    -   Bayesian or changepoint components,
-    -   calibration checks,
-    -   reconciliation against Python outputs.
-4.  **Backtesting and Simulation Engine**
-    -   regime-aware allocation overlay,
-    -   regime-conditioned simulation,
-    -   risk measures,
-    -   historical scenario replay,
-    -   Investment Committee artefacts.
-5.  **Model Card, Calibration and Validation Pack**
-    -   model definitions,
-    -   inputs and assumptions,
-    -   diagnostics,
-    -   calibration evidence,
-    -   coverage monitoring,
-    -   reconciliation checks.
-6.  **Final Presentation and Demonstration**
-    -   methodology,
-    -   results,
-    -   validation evidence,
-    -   ensemble design,
-    -   live or replayed end-to-end demonstration.
+### Explainable
 
-------------------------------------------------------------------------
+Outputs are intended to remain interpretable and traceable.
 
-# Engineering Standards
+### Reproducible
 
-## Data
+Configurations, models, data handling and execution components are structured to support repeatability.
 
--   Keep raw inputs immutable where possible.
--   Preserve source and timestamp metadata.
--   Validate before downstream use.
--   Separate source handling from business logic.
--   Protect against look-ahead bias.
+### Human-in-the-Loop
 
-## Features
+The system supports decision-making rather than autonomously executing investment actions.
 
--   Define features explicitly.
--   Avoid undocumented transformations.
--   Keep training and inference definitions consistent.
--   Document economic rationale for material features.
+---
 
-## Models
+# Current Status
 
--   Keep models modular.
--   Preserve diagnostics.
--   Record assumptions and versions.
--   Evaluate out of sample.
--   Do not hide model failures behind fallback outputs.
+### Completed and Implemented
 
-## Validation
+- [x] Business and domain understanding
+- [x] Research and methodology foundation
+- [x] Modular solution architecture
+- [x] Data-layer architecture
+- [x] Data engineering components
+- [x] Feature engineering framework
+- [x] Financial analysis components
+- [x] Baseline regime modelling
+- [x] Bayesian regime model
+- [x] Monte Carlo Dropout inference
+- [x] Predictive uncertainty components
+- [x] Ensemble and uncertainty architecture
+- [x] Explainability modules
+- [x] Validation framework
+- [x] Decision-support architecture
+- [x] Monitoring foundations
+- [x] Integration/orchestration components
+- [x] MLOps and model versioning foundations
+- [x] Historical NIFTY 50 + India VIX training workflow
+- [x] 8-feature historical training pipeline
+- [x] Saved trained model checkpoint
 
--   Use time-aware methodology.
--   Evaluate probabilities, not only labels.
--   Test stress periods.
--   Keep final evaluation separate from repeated tuning.
+### Next Operational Step
 
-## Deployment
+- [ ] Dedicated tested live-inference script for fetching the latest market observation and loading the saved checkpoint
 
--   Fail clearly when critical inputs are invalid.
--   Preserve logs and metadata.
--   Keep configuration explicit.
--   Make historical outputs reconstructable.
+This distinction is intentional: the repository should document only functionality that has actually been implemented and verified.
 
-------------------------------------------------------------------------
+---
 
-# What This Project Does Not Claim
+# Limitations
 
-This repository does not claim to:
+This project has important limitations.
 
--   predict the exact future market price with certainty,
--   guarantee investment returns,
--   replace a portfolio manager or Investment Committee,
--   eliminate financial risk,
--   make a complex model trustworthy merely because it uses Bayesian or
-    deep-learning terminology.
+- Financial markets can undergo structural breaks.
+- Historical relationships can weaken or reverse.
+- Market regimes are latent and involve modelling assumptions.
+- Current supervised training labels are rule-based constructs.
+- Regime boundaries can be ambiguous.
+- Model confidence does not guarantee correctness.
+- Historical performance does not guarantee future performance.
+- A trained model can become stale as market behaviour changes.
+- Data availability and revisions can affect results.
+- Production investment use would require additional validation, governance and controls.
 
-The value of the system comes from disciplined probabilistic modelling,
-validation, uncertainty measurement, and clear integration into a human
-decision process.
-
-------------------------------------------------------------------------
-
-# Contributing
-
-Before making changes:
-
-1.  Read the relevant project documentation.
-2.  Understand the module boundary you are changing.
-3.  Check the existing tests.
-4.  Make a focused change.
-5.  Run the affected tests.
-6.  Run the broader phase suite.
-7.  Update documentation when behaviour or assumptions change.
-
-A clean quantitative codebase is not defined by the number of models it
-contains. It is defined by whether another engineer can understand what
-each component does, reproduce the results, and identify where an output
-came from.
-
-------------------------------------------------------------------------
+---
 
 # Disclaimer
 
-This project is intended for research, educational, and decision-support
-purposes.
+This project is intended for:
 
-It is not financial advice and does not guarantee future market
-behaviour or investment performance.
+- research,
+- education,
+- quantitative experimentation,
+- financial analytics,
+- machine learning experimentation,
+- decision-support research.
 
-All model outputs should be interpreted together with appropriate risk
-controls, portfolio constraints, independent validation, and responsible
-human judgement.
+It does **not** provide financial advice and does not guarantee future market behaviour or investment performance.
+
+Model outputs should be interpreted with appropriate validation, risk controls, portfolio constraints and responsible human judgement.
+
+---
+
+## Project Philosophy
+
+> **Do not ask a model to pretend it knows the future.**
+>
+> **Ask what the market environment most likely is, quantify what is uncertain, and preserve enough evidence for a human to make a defensible decision.**
