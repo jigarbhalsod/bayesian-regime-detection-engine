@@ -230,3 +230,21 @@ data/curated/**
 !data/metadata/**
 !data/metadata/manifests/
 !data/metadata/manifests/.gitkeep
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Trained model artifacts
+artifacts/*.pt
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
