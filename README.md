@@ -1,87 +1,182 @@
 # Bayesian Regime Detection Engine for Equity Direction Forecasting
 
-> A modular, uncertainty-aware financial machine learning system for identifying changing market regimes in Indian equities.
+> A modular, uncertainty-aware financial machine learning system for identifying the latest available market regime in Indian equities.
 
-**Project 1A | Zetheta Algorithms Private Limited**
+**Project 1A | Zetheta**
 
 ---
 
 ## Overview
 
-Financial markets do not operate under a single stable environment.
+Financial markets do not operate under one stable environment. A model that performs well during a broad market rally may behave very differently during a volatility shock, market drawdown, transitional period, or post-shock recovery.
 
-A model that performs well during a broad market rally may behave very differently during a volatility shock, market drawdown, transitional period, or post-crisis recovery. Instead of attempting to predict an exact future market price, this project focuses on identifying the **current market regime** and representing the result probabilistically.
+Instead of attempting to predict an exact future market price, this project focuses on identifying the **current/latest available market regime** and representing the result probabilistically.
 
-The Bayesian Regime Detection Engine is designed to answer:
+The engine is designed to answer:
 
-- What market environment is currently being observed?
+- What market environment is represented by the latest available data?
 - Which regime is most likely?
 - How probable are the alternative regimes?
 - How confident is the model?
 - How uncertain is the prediction?
-- Can the result be traced back to its data, features, model, and execution context?
 
-The project is designed as a **research and decision-support system** for the Indian equity market.
-
-> **Direction over price. Probability over unsupported certainty. Complementary models over a single black box.**
+> **Direction over price. Probability over unsupported certainty. Uncertainty-aware modelling over a single deterministic label.**
 
 ---
 
-## Key Features
+# Project Status
 
-- Five-state Indian equity market regime framework
-- Historical market-data ingestion and preparation
-- Modular financial feature engineering
-- Financial analysis and risk components
-- Interpretable baseline regime models
-- Bayesian neural regime classification
-- Monte Carlo Dropout-based predictive uncertainty
-- Ensemble and uncertainty architecture
-- Calibration and validation components
-- Explainability layer
-- Decision-support abstractions
-- Monitoring and model-health foundations
-- Integration and orchestration components
-- Experiment tracking and model versioning support
-- Modular architecture with dedicated test coverage
+## Current Status: COMPLETE AND RUNNABLE END-TO-END
+
+The repository was developed incrementally across a broader 15-phase roadmap covering business understanding, research, architecture, data, features, modelling, uncertainty, validation, decision support, deployment foundations, documentation, and final integration.
+
+The final practical workflow has been verified end-to-end:
+
+```text
+Historical Market Data
+        |
+        v
+Download NIFTY 50 + India VIX
+        |
+        v
+Build Market Features
+        |
+        v
+Clean Missing / Non-Finite Values
+        |
+        v
+Create Rule-Based Regime Labels
+        |
+        v
+Standardize Features
+        |
+        v
+Train Bayesian Regime Model
+        |
+        v
+Save Model Checkpoint
+        |
+        v
+Download Latest Available Market Data
+        |
+        v
+Build Latest Feature Vector
+        |
+        v
+Load Trained Model
+        |
+        v
+Monte Carlo Dropout Inference
+        |
+        v
+Regime Probabilities + Confidence
+```
 
 ---
 
-## Market Regimes
+# Quick Start
 
-The project uses a five-state regime taxonomy for Indian equity markets.
+Run the complete project from the repository root:
+
+```powershell
+python scripts\train_live_regime_model.py; if ($LASTEXITCODE -eq 0) { python scripts\run_live_regime.py }
+```
+
+This single command:
+
+1. Downloads historical NIFTY 50 data.
+2. Downloads historical India VIX data.
+3. Builds the eight market features.
+4. Removes invalid, missing, and non-finite observations.
+5. Creates transparent rule-based training labels.
+6. Standardizes the training features.
+7. Trains the Bayesian regime model.
+8. Saves the trained checkpoint.
+9. Downloads the latest available market observations.
+10. Builds the latest valid feature vector.
+11. Loads the trained model.
+12. Runs Monte Carlo Dropout inference.
+13. Prints the dominant regime, probabilities, confidence, and latest feature values.
+
+Run it from:
+
+```text
+D:\PROJECT\Kotak Projects\bayesian-regime-detection-engine
+```
+
+---
+
+# Latest Verified End-to-End Run
+
+The latest verified workflow completed successfully with:
+
+```text
+Historical observations: 4511
+Feature observations   : 4511
+Training samples       : 3322
+Input features         : 8
+Number of regimes      : 5
+Latest training date   : 2026-08-25
+Latest market date     : 2026-08-25
+```
+
+Example verified inference:
+
+```text
+Detected Regime    : TRANSITIONAL
+Regime ID          : 2
+Confidence         : 0.7848
+
+Regime Probabilities:
+  RISK_ON        : 0.0919
+  LATE_CYCLE     : 0.0897
+  TRANSITIONAL   : 0.7848
+  POST_SHOCK     : 0.0284
+  RISK_OFF       : 0.0051
+```
+
+Because inference uses **Monte Carlo Dropout**, repeated runs on the same market observation can produce slightly different probability estimates. Verified confidence values included approximately:
+
+```text
+80.73%
+79.64%
+80.97%
+78.48%
+```
+
+The dominant regime remained **TRANSITIONAL** across those runs.
+
+---
+
+# Important Data Terminology
+
+The current runnable implementation uses:
+
+> **latest-available market data**
+
+It should not be described as guaranteed real-time tick-by-tick inference. The workflow uses the latest available daily observations returned by its data source.
+
+---
+
+# Market Regimes
 
 | Regime | Description |
 |---|---|
-| **RISK_ON** | Constructive market environment with positive trend, supportive participation and stronger risk appetite |
-| **LATE_CYCLE** | Mature expansion with possible signs of fatigue, narrow leadership or stretched conditions |
+| **RISK_ON** | Constructive market environment with positive trend and stronger risk appetite |
+| **LATE_CYCLE** | Mature expansion with possible signs of fatigue or stretched conditions |
 | **TRANSITIONAL** | Conflicting signals or movement between broader market states |
-| **POST_SHOCK** | Stabilisation or recovery following a period of elevated market stress |
+| **POST_SHOCK** | Stabilisation or recovery following elevated market stress |
 | **RISK_OFF** | Defensive or stressed environment with deteriorating risk appetite |
 
-The objective is not simply to produce a hard label.
-
-A regime assessment is intended to preserve the complete probability distribution:
-
-```text
-RISK_ON        0.11
-LATE_CYCLE     0.49
-TRANSITIONAL   0.29
-POST_SHOCK     0.05
-RISK_OFF       0.06
-```
-
-In this example, `LATE_CYCLE` is the dominant regime, but the probability assigned to `TRANSITIONAL` remains relevant. The system is designed to preserve that ambiguity rather than hiding it behind a single overconfident classification.
+The output preserves the complete regime probability distribution instead of only returning a hard label.
 
 ---
 
 # System Architecture
 
-The project follows a modular end-to-end architecture:
-
 ```text
                          Market Data
-                NIFTY • VIX • Macro • Flows
+                    NIFTY 50 + India VIX
                               |
                               v
                          Data Layer
@@ -89,59 +184,35 @@ The project follows a modular end-to-end architecture:
                               |
                               v
                     Feature Engineering
-             Returns • Momentum • Volatility • Macro
+         Returns • Momentum • Volatility • RSI • Trend
                               |
                               v
                     Financial Analysis
-                Risk • Drawdown • Performance
                               |
                               v
                       Regime Model Layer
-          Baselines • Bayesian • Neural • HMM • Sequential
+                Baselines • Bayesian • Advanced Models
                               |
                               v
                    Ensemble & Uncertainty
-                         Calibration
                               |
                               v
-                 Validation & Explainability
+                Validation & Explainability
                               |
                               v
-                  Decision Support + Health
+                 Decision Support + Monitoring
                               |
                               v
-                Monitoring • MLOps • Deployment
+                   Integration / MLOps Foundations
 ```
 
----
-
-# Current Implementation
-
-The repository has been developed incrementally across a broader **15-phase project roadmap**, covering:
-
-1. Business & BFSI Understanding
-2. Research & Literature
-3. Solution Architecture
-4. Data Layer
-5. Data Engineering
-6. Feature Engineering
-7. Financial Analysis
-8. Baseline Regime Engine
-9. Advanced Models
-10. Ensemble & Uncertainty
-11. Validation
-12. Decision Support
-13. Deployment
-14. Documentation
-15. Final Integration & Review
-
-The repository includes modules and architectural foundations across data processing, feature generation, analysis, modelling, ensemble logic, uncertainty estimation, explainability, validation, monitoring, integration, and MLOps.
+The current verified end-to-end path uses the concrete Bayesian model workflow below.
 
 ---
 
 # Bayesian Regime Model
 
-One concrete model path implemented in the project uses a Bayesian-style neural classification workflow built around:
+The implemented Bayesian-style neural classification path uses:
 
 - PyTorch
 - Bayesian regime network architecture
@@ -171,15 +242,13 @@ Regime Probability Distribution
       +-- Predictive Uncertainty
 ```
 
-Monte Carlo Dropout keeps dropout active during repeated inference passes, allowing the model to generate a distribution of predictions rather than relying on one deterministic forward pass.
+Monte Carlo Dropout keeps dropout active during repeated inference passes. This is why exact confidence values can vary slightly across repeated runs.
 
 ---
 
 # Historical Training Workflow
 
-A historical training workflow has been added to move beyond the original synthetic demonstration.
-
-The current implementation downloads historical:
+The historical training workflow downloads:
 
 - **NIFTY 50**
 - **India VIX**
@@ -213,38 +282,41 @@ Bayesian Regime Model Training
 Save Model + Metadata
 ```
 
-### Latest verified training run
+The trained checkpoint stores:
 
-```text
-Historical observations: 4071
-Valid training samples : 3295
-Input features         : 8
-Number of regimes      : 5
-Latest training date   : 2026-08-25
-```
+- model state dictionary,
+- feature columns,
+- feature means,
+- feature standard deviations,
+- regime names,
+- model configuration,
+- training sample count,
+- latest training market date.
 
-The trained checkpoint is saved at:
+Generated checkpoint location:
 
 ```text
 artifacts/live_regime_model.pt
 ```
 
+The artifact can be recreated by running the training script.
+
 ---
 
 # Current Model Features
 
-The current historical Bayesian training workflow uses eight features:
+The live workflow uses eight features:
 
 | # | Feature | Description |
 |---|---|---|
-| 1 | `short_return` | Short-term market return |
-| 2 | `medium_return` | Medium-term market return |
-| 3 | `momentum` | Intermediate market momentum |
-| 4 | `volatility` | Rolling return volatility |
-| 5 | `volume_change` | Change in trading volume |
+| 1 | `short_return` | One-period NIFTY 50 percentage return |
+| 2 | `medium_return` | 20-period NIFTY 50 percentage return |
+| 3 | `momentum` | 10-period NIFTY 50 percentage return |
+| 4 | `volatility` | Rolling standard deviation of short-term returns |
+| 5 | `volume_change` | Change in market trading volume with invalid values handled safely |
 | 6 | `rsi` | Relative Strength Index |
-| 7 | `vix_risk` | Change in India VIX risk signal |
-| 8 | `trend_strength` | Distance from the rolling market trend |
+| 7 | `vix_risk` | Five-period percentage change in India VIX |
+| 8 | `trend_strength` | Distance from the rolling 20-period market trend |
 
 Before training:
 
@@ -253,448 +325,354 @@ Before training:
 3. Features are standardized.
 4. Normalization statistics are stored with the checkpoint.
 
-This ensures that future inference can apply the same feature transformation used during training.
+Inference uses the same stored normalization statistics.
 
 ---
 
-# Regime Distribution in Latest Training Run
-
-The latest verified training run produced the following class distribution:
+# Latest Verified Training Distribution
 
 ```text
-RISK_ON        : 620
-LATE_CYCLE     : 824
-TRANSITIONAL   : 1427
-POST_SHOCK     : 147
+RISK_ON        : 527
+LATE_CYCLE     : 1179
+TRANSITIONAL   : 1295
+POST_SHOCK     : 44
 RISK_OFF       : 277
 ```
 
-These labels are currently generated through transparent rule-based logic using combinations of market trend, momentum, RSI, volatility, and VIX behaviour.
+Current labels are generated through transparent rule-based logic using combinations of trend, momentum, RSI, volatility, and VIX behaviour.
 
-They should therefore be interpreted as **supervised modelling targets based on explicit assumptions**, not as an objectively observable ground truth.
+They should therefore be interpreted as **supervised modelling targets based on explicit assumptions**, not as perfectly objective market ground truth.
+
+---
+
+# Latest-Available Inference Workflow
+
+The dedicated inference script is:
+
+```text
+scripts/run_live_regime.py
+```
+
+It performs:
+
+```text
+Latest Available NIFTY 50 Data
+              +
+Latest Available India VIX Data
+              |
+              v
+       Build 8 Market Features
+              |
+              v
+Select Latest Valid Observation
+              |
+              v
+      Load Model Checkpoint
+              |
+              v
+Apply Stored Standardization
+              |
+              v
+    Monte Carlo Dropout Inference
+              |
+              v
+Regime + Probabilities + Confidence
+```
+
+Output includes:
+
+- Latest market date
+- Model training date
+- Detected regime
+- Regime ID
+- Confidence
+- Probability for each regime
+- Latest market feature values
 
 ---
 
 # Repository Structure
 
-The project is organised by responsibility to keep individual concerns modular and testable.
-
 ```text
 bayesian-regime-detection-engine/
 |
-+-- artifacts/                  # Saved model artifacts
-|   +-- live_regime_model.pt
-|
++-- artifacts/                  # Generated trained model artifacts
 +-- configs/                    # Configuration files
-|
 +-- data/                       # Data storage and processing layers
-|
 +-- docs/                       # Research, architecture and documentation
-|
 +-- notebooks/                  # Exploration and experiments
-|
-+-- reports/                    # Generated analysis and reporting artifacts
++-- reports/                    # Generated reports
 |
 +-- scripts/
 |   +-- run_regime_demo.py
 |   +-- train_live_regime_model.py
+|   +-- run_live_regime.py
 |
 +-- src/
-|   +-- analysis/               # Financial analysis
-|   +-- data/                   # Data ingestion and preparation
-|   +-- features/               # Feature engineering
-|   +-- models/                 # Baseline and advanced models
-|   |   +-- bayesian/           # Bayesian regime model
-|   +-- ensemble/               # Model combination
-|   +-- uncertainty/            # Confidence and uncertainty
-|   +-- explainability/         # Model interpretation
-|   +-- validation/             # Validation and diagnostics
-|   +-- decision_support/       # Decision-support layer
-|   +-- monitoring/             # Data/model monitoring
-|   +-- integration/            # Pipeline integration
-|   +-- mlops/                  # Versioning and experiment support
+|   +-- analysis/
+|   +-- data/
+|   +-- features/
+|   +-- models/
+|   |   +-- bayesian/
+|   +-- ensemble/
+|   +-- uncertainty/
+|   +-- explainability/
+|   +-- validation/
+|   +-- decision_support/
+|   +-- monitoring/
+|   +-- integration/
+|   +-- mlops/
 |
-+-- tests/                      # Automated tests
-|
++-- tests/
 +-- README.md
-+-- requirements.txt
-+-- pyproject.toml
++-- .gitignore
 ```
 
 ---
 
-# Technology Stack
+# Scripts
 
-### Core
-
-- Python
-- NumPy
-- Pandas
-- PyTorch
-- yfinance
-- pytest
-
-### Broader Architecture / Research Components
-
-Depending on the module and experiment, the project architecture also considers or supports tools and approaches involving:
-
-- scikit-learn
-- SciPy
-- statsmodels
-- hmmlearn
-- PyMC / NumPyro
-- ArviZ
-- TensorFlow Probability
-- sequential inference
-- changepoint detection
-- conformal prediction
-- model explainability
-
-Not every package is required to execute the current historical Bayesian training workflow.
-
----
-
-# Installation
-
-## 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd bayesian-regime-detection-engine
-```
-
-## 2. Create a Virtual Environment
-
-### Windows PowerShell
+## Full End-to-End Run
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+python scripts\train_live_regime_model.py; if ($LASTEXITCODE -eq 0) { python scripts\run_live_regime.py }
 ```
 
-## 3. Install Dependencies
-
-```powershell
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-If the project is configured for editable installation:
-
-```powershell
-python -m pip install -e .
-```
-
----
-
-# Verify the Environment
-
-Check the primary packages used by the current historical workflow:
-
-```powershell
-python -c "import yfinance, pandas, numpy, torch; print('All required packages are installed')"
-```
-
-Expected output:
-
-```text
-All required packages are installed
-```
-
----
-
-# How to Run
-
-## 1. Bayesian Synthetic Demo
-
-The original reproducible demonstration trains the Bayesian model on synthetic regime data and evaluates a fixed demonstration observation.
-
-```powershell
-python scripts\run_regime_demo.py
-```
-
-Workflow:
-
-```text
-Synthetic Market Data
-        |
-        v
-Bayesian Model Training
-        |
-        v
-Fixed Market Observation
-        |
-        v
-Monte Carlo Dropout Inference
-        |
-        v
-Regime Probabilities + Confidence
-```
-
-Because the script uses reproducible data generation and a fixed observation, repeated runs can produce the same output.
-
-This is expected behaviour.
-
----
-
-## 2. Historical Model Training
-
-Train the Bayesian regime model using historical NIFTY 50 and India VIX data:
+## Train Only
 
 ```powershell
 python scripts\train_live_regime_model.py
 ```
 
-A successful run:
+## Latest-Available Inference Only
 
-```text
-Downloads historical data
-        |
-        v
-Builds market features
-        |
-        v
-Cleans invalid observations
-        |
-        v
-Creates regime labels
-        |
-        v
-Normalizes features
-        |
-        v
-Trains Bayesian model
-        |
-        v
-Saves checkpoint
+```powershell
+python scripts\run_live_regime.py
 ```
 
-Expected final output includes:
+This requires:
 
 ```text
+artifacts/live_regime_model.pt
+```
+
+If the checkpoint does not exist, run training first.
+
+## Original Synthetic Demo
+
+```powershell
+python scripts\run_regime_demo.py
+```
+
+This is separate from the real historical-data training workflow.
+
+---
+
+# Example Successful Output
+
+```text
+BAYESIAN REGIME DETECTION ENGINE — LIVE MODEL TRAINING
+
+Downloading NIFTY 50 historical data...
+Downloading India VIX historical data...
+Building market features...
+Preparing training dataset...
+Training Bayesian regime model...
 Training complete.
 
 Model saved successfully:
 artifacts\live_regime_model.pt
+
+BAYESIAN REGIME DETECTION ENGINE — LIVE INFERENCE
+
+Latest Market Date : YYYY-MM-DD
+Model Training Date: YYYY-MM-DD
+
+Detected Regime    : TRANSITIONAL
+Regime ID          : 2
+Confidence         : 0.XXXX
+
+Regime Probabilities:
+  RISK_ON        : 0.XXXX
+  LATE_CYCLE     : 0.XXXX
+  TRANSITIONAL   : 0.XXXX
+  POST_SHOCK     : 0.XXXX
+  RISK_OFF       : 0.XXXX
 ```
+
+Actual values depend on the latest available market data and stochastic Monte Carlo inference.
 
 ---
 
-# Testing
+# Technology Stack
 
-The project includes automated tests across major modules and development phases.
+- Python
+- PyTorch
+- NumPy
+- Pandas
+- yfinance
+- Monte Carlo Dropout
+- Git / GitHub
 
-Run the complete test suite:
+---
+
+# Environment Check
 
 ```powershell
-python -m pytest -v
+python -c "import yfinance, pandas, numpy, torch; print('All required packages are installed')"
 ```
 
-Run a specific test file:
-
-```powershell
-python -m pytest tests\<test_file>.py -v
-```
-
-Representative verified milestones include:
-
-- **Phase 5 – Data Engineering:** 19 tests passed
-- **Phase 8 – Baseline Regime Engine:** 106 tests passed
-- Dedicated module and integration testing across subsequent architectural components
-
-The project was developed incrementally so that module-level correctness and interface compatibility could be checked throughout implementation.
+The verified workflow was run with Python 3.11.
 
 ---
 
-# Validation Philosophy
+# 15-Phase Development Roadmap
 
-Regime detection is different from conventional supervised classification because market regimes are not directly observable in the same way as ordinary class labels.
+1. Business & BFSI Understanding
+2. Research & Literature
+3. Solution Architecture
+4. Data Layer
+5. Data Engineering
+6. Feature Engineering
+7. Financial Analysis
+8. Baseline Regime Engine
+9. Advanced Models
+10. Ensemble & Uncertainty
+11. Validation
+12. Decision Support
+13. Deployment
+14. Documentation
+15. Final Integration & Review
 
-The project therefore considers multiple forms of evaluation, including:
+The repository contains modular components and architectural foundations developed across these phases.
 
-- chronological validation,
-- walk-forward evaluation,
-- leakage prevention,
-- regime stability,
-- probability quality,
-- calibration,
-- stress-period behaviour,
-- model robustness,
-- model agreement and disagreement,
-- operational health.
-
-Accuracy alone is not sufficient for a probabilistic financial regime model.
-
----
-
-# Explainability and Decision Support
-
-The system architecture separates:
-
-```text
-Model Output
-     |
-     v
-Probability Distribution
-     |
-     v
-Uncertainty Assessment
-     |
-     v
-Validation / Model Health
-     |
-     v
-Explainability
-     |
-     v
-Human Review
-     |
-     v
-Decision Within Constraints
-```
-
-The project does **not** treat a model prediction as an automatic trading instruction.
-
-Instead, the intended decision-support output can include:
-
-- current regime assessment,
-- complete regime probability distribution,
-- confidence,
-- uncertainty,
-- model-health status,
-- explanatory drivers,
-- changes from previous assessments,
-- potential decision context.
-
-This preserves the distinction between **analytical evidence** and the **final investment decision**.
-
----
-
-# Monitoring and MLOps
-
-The architecture includes components for making the project reproducible and operationally traceable.
-
-These areas include:
-
-- experiment tracking,
-- model versioning,
-- version registry support,
-- deployment state,
-- lifecycle management,
-- data quality monitoring,
-- drift detection,
-- performance monitoring,
-- degradation detection,
-- integration and orchestration.
-
-The goal is that a historical regime assessment can eventually be traced back to the relevant model and execution context.
+The final practical integration focused on making the project demonstrable through a complete training-to-inference workflow using historical Indian market data and the latest available daily observation.
 
 ---
 
 # Development Principles
 
-The project follows several engineering principles.
-
 ### Modular by Design
-
-Individual responsibilities are separated across data, features, analysis, modelling, validation and deployment layers.
+Responsibilities are separated across data, features, analysis, modelling, validation, uncertainty, explainability, monitoring, and integration.
 
 ### Time-Aware
-
-Financial time-series operations should respect chronological ordering and avoid look-ahead bias.
+Financial time-series processing should respect chronological ordering and avoid look-ahead bias.
 
 ### Probability-Aware
-
-The output should preserve alternative regime probabilities rather than only returning a hard label.
+The output preserves alternative regime probabilities rather than only returning a hard label.
 
 ### Uncertainty-Aware
-
-Confidence is not treated as certainty. Predictive uncertainty is an explicit part of the modelling architecture.
+Confidence is not treated as certainty.
 
 ### Explainable
-
-Outputs are intended to remain interpretable and traceable.
+The broader architecture includes components intended to keep outputs interpretable and traceable.
 
 ### Reproducible
-
-Configurations, models, data handling and execution components are structured to support repeatability.
+Configuration, feature normalization metadata, model artifacts, and scripts support repeatable workflows.
 
 ### Human-in-the-Loop
-
-The system supports decision-making rather than autonomously executing investment actions.
+The system is a decision-support and research tool, not an autonomous trading system.
 
 ---
 
-# Current Status
+# Current Implementation Summary
 
-### Completed and Implemented
-
-- [x] Business and domain understanding
-- [x] Research and methodology foundation
-- [x] Modular solution architecture
-- [x] Data-layer architecture
-- [x] Data engineering components
-- [x] Feature engineering framework
-- [x] Financial analysis components
-- [x] Baseline regime modelling
-- [x] Bayesian regime model
+- [x] Historical NIFTY 50 ingestion
+- [x] Historical India VIX ingestion
+- [x] Data alignment
+- [x] Eight-feature engineering pipeline
+- [x] Missing-value handling
+- [x] Non-finite value handling
+- [x] Safe handling of invalid latest volume observations
+- [x] Rule-based regime labelling
+- [x] Five-regime framework
+- [x] Feature standardization
+- [x] Bayesian neural regime model
 - [x] Monte Carlo Dropout inference
-- [x] Predictive uncertainty components
-- [x] Ensemble and uncertainty architecture
-- [x] Explainability modules
-- [x] Validation framework
-- [x] Decision-support architecture
-- [x] Monitoring foundations
-- [x] Integration/orchestration components
-- [x] MLOps and model versioning foundations
-- [x] Historical NIFTY 50 + India VIX training workflow
-- [x] 8-feature historical training pipeline
-- [x] Saved trained model checkpoint
-
-### Next Operational Step
-
-- [ ] Dedicated tested live-inference script for fetching the latest market observation and loading the saved checkpoint
-
-This distinction is intentional: the repository should document only functionality that has actually been implemented and verified.
+- [x] Probability output
+- [x] Confidence estimation
+- [x] Model checkpoint persistence
+- [x] Checkpoint metadata
+- [x] Latest-available inference script
+- [x] Single-command end-to-end execution
+- [x] Repeated successful end-to-end verification
 
 ---
 
 # Limitations
 
-This project has important limitations.
+## Latest Available Is Not Guaranteed Real-Time
 
-- Financial markets can undergo structural breaks.
-- Historical relationships can weaken or reverse.
-- Market regimes are latent and involve modelling assumptions.
-- Current supervised training labels are rule-based constructs.
-- Regime boundaries can be ambiguous.
-- Model confidence does not guarantee correctness.
-- Historical performance does not guarantee future performance.
-- A trained model can become stale as market behaviour changes.
-- Data availability and revisions can affect results.
-- Production investment use would require additional validation, governance and controls.
+The current pipeline uses the latest available daily observations returned by its data source. It should not be described as guaranteed tick-level or real-time market inference.
 
----
+## Rule-Based Training Labels
 
-# Disclaimer
+The current supervised targets are generated from explicit rules and selected market signals. They are modelling assumptions rather than perfectly objective ground truth.
 
-This project is intended for:
+## Current Verified Live Path Uses Selected Inputs
 
-- research,
-- education,
-- quantitative experimentation,
-- financial analytics,
-- machine learning experimentation,
-- decision-support research.
+The verified end-to-end path currently uses NIFTY 50 and India VIX as primary inputs. Broader repository architecture may support additional components, but they should not automatically be claimed as part of the same verified live path unless separately executed and validated.
 
-It does **not** provide financial advice and does not guarantee future market behaviour or investment performance.
+## Confidence Is Not Certainty
 
-Model outputs should be interpreted with appropriate validation, risk controls, portfolio constraints and responsible human judgement.
+A high probability does not guarantee a correct regime interpretation.
+
+## Not Financial Advice
+
+This project is for educational, research, and decision-support purposes. It does not provide investment advice or automatically execute trades.
 
 ---
 
-## Project Philosophy
+# Resume / Portfolio Description
 
-> **Do not ask a model to pretend it knows the future.**
->
-> **Ask what the market environment most likely is, quantify what is uncertain, and preserve enough evidence for a human to make a defensible decision.**
+> **Developed an end-to-end Bayesian Regime Detection Engine that trains on historical NIFTY 50 and India VIX data, engineers market features, classifies market conditions into five regimes, and performs latest-available market regime inference using Monte Carlo Dropout-based probabilistic uncertainty estimation.**
+
+Short version:
+
+> **Built a Bayesian market regime detection system for Indian equities using NIFTY 50 and India VIX data, with five-state classification and Monte Carlo Dropout-based uncertainty-aware inference.**
+
+---
+
+# Final Demonstration
+
+Run:
+
+```powershell
+python scripts\train_live_regime_model.py; if ($LASTEXITCODE -eq 0) { python scripts\run_live_regime.py }
+```
+
+A successful run demonstrates:
+
+```text
+Real Historical Market Data
+        +
+Feature Engineering
+        +
+Bayesian Model Training
+        +
+Model Persistence
+        +
+Latest-Available Data Retrieval
+        +
+Model Loading
+        +
+Monte Carlo Dropout Inference
+        =
+End-to-End Regime Detection Workflow
+```
+
+---
+
+## Project 1A — Final Status
+
+**Status:** Complete and runnable end-to-end  
+**Primary data path:** Historical NIFTY 50 + India VIX  
+**Inference mode:** Latest available daily market observation  
+**Regimes:** 5  
+**Features:** 8  
+**Model:** Bayesian-style neural classifier with Monte Carlo Dropout inference  
+**Output:** Regime probabilities, dominant regime, confidence, and latest feature values
+
+---
+
+**Project 1A | Bayesian Regime Detection Engine | Zetheta**
